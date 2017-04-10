@@ -1,0 +1,50 @@
+#!/bin/bash
+
+cd /srv
+while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
+	findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {}
+	cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {}
+	sleep 1
+done
+losetup -d /dev/loop/0 &>/dev/null
+rm -rf /os &>/dev/null
+mkdir -p /os
+dd if=/dev/zero of=image.pine bs=512 count=524288
+losetup -P /dev/loop0 image.pine
+sfdisk /dev/loop0 < layout.pine
+mkfs.xfs -f -L /boot -i size=1024 /dev/loop0p1
+mkfs.xfs -f -L /sysroot -d agcount=8 -i size=1024 /dev/loop0p3
+mkswap /dev/loop0p2
+
+mount /dev/loop0p3 /os
+mkdir -p /os/boot
+mount /dev/loop0p1 /os/boot
+mkdir -p /os/sysroot
+mount --rbind /os /os/sysroot
+
+ostree admin init-fs /os
+ostree admin os-init --sysroot=/os pine
+ostree --repo=/os/ostree/repo pull-local /srv/pine trunk
+
+ostree admin deploy --sysroot=/os --os=pine trunk --karg=root=UUID=`blkid -s UUID -o value /dev/loop0p3` --karg=rootfstype=xfs --karg=rootflags=rw,noatime,nodiratime,largeio,inode64,nobarrier
+
+dpl=`find /os/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
+mount --bind $dpl $dpl
+mount --bind /os $dpl/sysroot
+mount --move $dpl /os
+mount /dev/loop0p1 /os/boot
+
+#mount --bind /dev/ /os/dev
+#mount --bind /sys  /os/sys
+#mount --bind /proc /os/proc
+
+## grub
+mount --bind /os/etc /etc
+mount --bind /os/boot /boot
+mkdir -p /ostree
+mount --bind /os/ostree /ostree
+
+grub-install /dev/loop0 --root-directory=/os
+grub-mkconfig -o /os/boot/grub/grub.cfg
+sync
+umount -l /etc /boot /ostree /os/dev /os/sys /os/proc /os/boot /os/sysroot /os /sysroot &>/dev/null
