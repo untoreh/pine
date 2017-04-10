@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cn="\033[1;32;40m"
+cf="\033[0m"
+printc(){
+        echo -e "${cn}$@${cf}"
+}
+
+last_version() {
+        git ls-remote -t git://github.com/"$1".git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -b -t . -k 1,1nr -k 2,2nr -k 3,3r -k 4,4r -k 5,5r | head -1
+}
+

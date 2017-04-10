@@ -1,0 +1,36 @@
+#!/bin/sh
+
+cat <<EOF > /etc/apk/repositories
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
+http://dl-cdn.alpinelinux.org/alpine/edge/community
+http://dl-cdn.alpinelinux.org/alpine/edge/testing
+EOF
+
+apk add --update-cache \
+	wget \
+	git \
+	unzip \
+	xz \
+	bash \
+	coreutils \
+	blkid \
+	binutils \
+	multipath-tools \
+	ca-certificates \
+	util-linux \
+	sfdisk \
+	ostree \
+	xfsprogs \
+	grub-bios
+
+source ./functions.pine
+source ./glib.pine
+
+## UPX
+UPX_VERSION=`last_version upx/upx`
+upxn="upx-$UPX_VERSION-amd64_linux"
+wget https://github.com/upx/upx/releases/download/v$UPX_VERSION/$upxn.tar.xz
+tar xf $upxn.tar.xz 2>/dev/null
+mv $upxn/upx /usr/bin/
+rm -rf $upxn $upxn.tar.xz

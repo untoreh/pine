@@ -1,0 +1,20 @@
+#!/bin/sh
+
+## functions 
+source ./functions.pine
+
+## prepare
+printc "preparing..."
+source ./prepare.pine
+
+## init the repo
+printc "initializing the repo..."
+source ./repo.pine
+
+## build the tree 
+printc "building the tree..."
+source ./make.pine
+
+## build image
+printc "building image..."
+source ./build.pine
