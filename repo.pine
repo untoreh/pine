@@ -1,7 +1,8 @@
 #!/bin/bash
 
-rm -rf pine
-mkdir -p pine
+cd /srv
+rm -rf pine tree
+mkdir -p pine tree
 ostree --repo=pine --mode=archive-z2 init
 
 ostree --repo=pine commit -s $(date)'-build' -b trunk --tree=dir=tree

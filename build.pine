@@ -9,6 +9,7 @@ done
 losetup -d /dev/loop/0 &>/dev/null
 rm -rf /os &>/dev/null
 mkdir -p /os
+
 dd if=/dev/zero of=image.pine bs=512 count=524288
 losetup -P /dev/loop0 image.pine
 sfdisk /dev/loop0 < layout.pine
@@ -25,7 +26,6 @@ mount --rbind /os /os/sysroot
 ostree admin init-fs /os
 ostree admin os-init --sysroot=/os pine
 ostree --repo=/os/ostree/repo pull-local /srv/pine trunk
-
 ostree admin deploy --sysroot=/os --os=pine trunk --karg=root=UUID=`blkid -s UUID -o value /dev/loop0p3` --karg=rootfstype=xfs --karg=rootflags=rw,noatime,nodiratime,largeio,inode64,nobarrier
 
 dpl=`find /os/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
@@ -34,17 +34,18 @@ mount --bind /os $dpl/sysroot
 mount --move $dpl /os
 mount /dev/loop0p1 /os/boot
 
-#mount --bind /dev/ /os/dev
-#mount --bind /sys  /os/sys
-#mount --bind /proc /os/proc
+mount --bind /dev/ /os/dev
+mount --bind /sys  /os/sys
+mount --bind /proc /os/proc
 
 ## grub
+mkdir -p /boot /ostree
 mount --bind /os/etc /etc
 mount --bind /os/boot /boot
-mkdir -p /ostree
 mount --bind /os/ostree /ostree
 
 grub-install /dev/loop0 --root-directory=/os
-grub-mkconfig -o /os/boot/grub/grub.cfg
+# grub-mkconfig -o /os/boot/grub/grub.cfg
+chroot /os grub-mkconfig -o /boot/grub/grub.cfg
 sync
 umount -l /etc /boot /ostree /os/dev /os/sys /os/proc /os/boot /os/sysroot /os /sysroot &>/dev/null

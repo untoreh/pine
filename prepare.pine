@@ -1,0 +1,20 @@
+#!/bin/sh
+
+cat <<EOF >> /etc/apk/repositories
+http://dl-cdn.alpinelinux.org/alpine/edge/testing
+EOF
+
+apk add --no-cache \
+	wget \
+	git \
+	unzip \
+	bash \
+	coreutils \
+	ca-certificates \
+	upx \
+	util-linux \
+	sfdisk \
+	ostree \
+	xfsprogs \
+	grub-bios \
+
