@@ -1,11 +1,12 @@
 #!/bin/sh
 
 ## GLIB
-if [ -n "$1" ] ; then
-	rootp="--root $1"
-fi
 GLIB_VERSION=`last_version sgerrand/alpine-pkg-glibc`
 wget -q -O $rootp/etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
 wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/$GLIB_VERSION/glibc-$GLIB_VERSION.apk
-apk $rootp add glibc-$GLIB_VERSION.apk
+if [ -n "$1" ] ; then
+	apk --root $1 add glibc-$GLIB_VERSION.apk
+else 
+	apk add glibc-$GLIB_VERSION.apk
+fi
 rm glibc-$GLIB_VERSION.apk
