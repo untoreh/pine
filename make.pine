@@ -99,10 +99,10 @@ mount --bind /proc proc
 mount --bind /dev dev
 
 apkc(){
-	apk --arch x86_64 -U --allow-untrusted --root $PWD --initdb add $@
+	apk --arch x86_64 --allow-untrusted --root $PWD --initdb add $@
 }
 
-apkc alpine-base \
+apkc --update-cache alpine-base \
 	tzdata \
 	mkinitfs \
 	grub-bios \
@@ -139,7 +139,7 @@ done
 
 ## GLIB
 source ../functions.pine
-source ../glib.pine
+source ../glib.pine $PWD
 
 source ../extras.pine
 exit

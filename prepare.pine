@@ -7,14 +7,16 @@ http://dl-cdn.alpinelinux.org/alpine/edge/community
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
-apk add --no-cache \
+source ../functions.pine
+source ../glib.pine /
+
+apk add --update-cache \
 	wget \
 	git \
 	unzip \
 	bash \
 	coreutils \
 	ca-certificates \
-	upx \
 	util-linux \
 	sfdisk \
 	ostree \
