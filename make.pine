@@ -49,7 +49,7 @@ stop() {
 EOF
 chmod +x etc/init.d/vardirs
 
-cat <<EOF > etc/init.d/knobs
+cat <<'EOF' > etc/init.d/knobs
 #!/sbin/openrc-run
 
 description="Knobs customizations"
@@ -116,7 +116,7 @@ start() {
 stop() {
 	return
 }
-EOF
+'EOF'
 chmod +x etc/init.d/knobs
 
 ## mount-ro env var
