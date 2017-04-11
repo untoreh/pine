@@ -26,4 +26,4 @@ mkdir -p usr/bin
 mv etcd*/etcd* usr/bin
 rm -rf etcd*
 
-./compress.pine $PWD/usr/bin/terraform $PWD/usr/bin/docker* $PWD/usr/bin/etcd*
+../compress.pine $PWD/usr/bin/terraform $PWD/usr/bin/docker* $PWD/usr/bin/etcd*
