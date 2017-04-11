@@ -152,32 +152,8 @@ wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/$GLIB_VERSIO
 apk --initdb --arch x86_64 -U --allow-untrusted --root $PWD add glibc-$GLIB_VERSION.apk
 rm glibc-$GLIB_VERSION.apk
 
-## DOCKER
-#DOCKER_VERSION=`last_version docker/docker`
-#wget https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz -O docker.tgz
-#tar xf docker.tgz
-#mv docker/docker* usr/bin/
-#rm -rf docker docker.tgz
-
-## TERRAFORM
-#TERRAFORM_VERSION=`last_version hashicorp/terraform`
-#wget https://releases.hashicorp.com/terraform/$TERRAFORM_VERSION/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -O terra.zip
-#unzip terra.zip
-#mv terraform usr/bin
-#rm -rf terra.zip
-
-## ETCD
-#ETCD_VERSION=`last_version coreos/etcd`
-#wget https://github.com/coreos/etcd/releases/download/v$ETCD_VERSION/etcd-v$ETCD_VERSION-linux-amd64.tar.gz -O etcd.zip
-#tar xvf etcd.zip
-#mv etcd*/etcd* usr/bin
-#rm -rf etcd*
-
-## COMPRESSION
-#upx --best usr/bin/etcd
-#upx --best usr/bin/etcdctl
-#upx --best usr/bin/docker*
-#upx --best usr/bin/terraform
+## EXTRAS
+./extras.pine
 
 ## BOOT
 apkc --no-scripts linux-virtgrsec
