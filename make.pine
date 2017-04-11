@@ -99,10 +99,7 @@ mount --bind /proc proc
 mount --bind /dev dev
 
 apkc(){
-	apk --arch x86_64 -U --allow-untrusted --root $PWD --initdb add \
-		-X http://nl.alpinelinux.org/alpine/v3.5/main/ \
-		-X http://nl.alpinelinux.org/alpine/edge/testing/ \
-		$@
+	apk --arch x86_64 -U --allow-untrusted --root $PWD --initdb add $@
 }
 
 apkc alpine-base \
@@ -140,21 +137,12 @@ for r in `cat ../runlevels.pine` ; do
 	ln -srf etc/init.d/`basename $r` `echo "$r" | sed 's#^/##'`
 done
 
-## EXTRA
-last_version() {
-	git ls-remote -t git://github.com/"$1".git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -b -t . -k 1,1nr -k 2,2nr -k 3,3r -k 4,4r -k 5,5r | head -1
-}
-
 ## GLIB
-GLIB_VERSION=`last_version sgerrand/alpine-pkg-glibc`
-wget -q -O etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
-wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/$GLIB_VERSION/glibc-$GLIB_VERSION.apk
-apk --initdb --arch x86_64 -U --allow-untrusted --root $PWD add glibc-$GLIB_VERSION.apk
-rm glibc-$GLIB_VERSION.apk
+source ../functions.pine
+source ../glib.pine
 
-## EXTRAS
-./extras.pine
-
+source ../extras.pine
+exit
 ## BOOT
 apkc --no-scripts linux-virtgrsec
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
