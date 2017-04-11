@@ -10,7 +10,7 @@ losetup -d /dev/loop/0 &>/dev/null
 rm -rf /os &>/dev/null
 mkdir -p /os
 
-dd if=/dev/zero of=image.pine bs=512 count=524288
+dd if=/dev/zero of=image.pine bs=512 count=786432
 losetup -P /dev/loop0 image.pine
 sfdisk /dev/loop0 < layout.pine
 mkfs.xfs -f -L /boot -i size=1024 /dev/loop0p1
