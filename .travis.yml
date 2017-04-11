@@ -1,5 +1,5 @@
 install: true
-language: none
+language: generic
 services:
 - docker
 script:
