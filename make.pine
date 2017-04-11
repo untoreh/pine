@@ -139,9 +139,7 @@ for r in `cat ../runlevels.pine` ; do
 done
 
 ## GLIB
-mount -o remount,ro /proc
 source ../glib.pine $PWD
-mount -o remount,rw /proc
 source ../extras.pine
 
 ## BOOT
