@@ -1,4 +1,5 @@
 install: true
+language: none
 services:
 - docker
 script:
