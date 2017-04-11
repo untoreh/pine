@@ -184,7 +184,7 @@ apkc --no-scripts linux-virtgrsec
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
 chroot $PWD mkinitfs \
 	-F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio" \
-	$(basename `ls -d /lib/modules/*`)
+	$(basename `ls -d lib/modules/*`)
 mv boot tmpboot && mkdir boot
 cp -a tmpboot/vmlinuz-virtgrsec boot/
 cp -a tmpboot/initramfs-virtgrsec boot/
