@@ -22,7 +22,7 @@ apk add --update-cache \
 	grub-bios
 
 source ./functions.pine
-./glib.pine
+source ./glib.pine
 
 ## UPX
 UPX_VERSION=`last_version upx/upx`
