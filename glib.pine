@@ -1,5 +1,6 @@
 #!/bin/sh
 
+mount -o ro,remount /proc
 ## GLIB
 GLIB_VERSION=`last_version sgerrand/alpine-pkg-glibc`
 if [ -n "$1" ] ; then
@@ -12,3 +13,4 @@ else
 	apk add glibc-$GLIB_VERSION.apk
 fi
 rm glibc-$GLIB_VERSION.apk
+mount -o rw,remount /proc
