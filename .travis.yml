@@ -2,7 +2,7 @@ install: true
 services:
 - docker
 script:
-- "./run.pine"
+        - docker run -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge ./run.pine
 deploy:
   provider: releases
   api_key:
