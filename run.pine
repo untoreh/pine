@@ -2,6 +2,7 @@
 
 ## functions 
 source ./functions.pine
+ls /proc
 
 ## prepare
 printc "preparing..."
