@@ -2,6 +2,7 @@
 
 mkdir -p /srv/tree
 cd /srv/tree
+
 while `mountpoint -q ./proc` ; do
 	umount proc
 done

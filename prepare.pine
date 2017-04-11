@@ -7,9 +7,6 @@ http://dl-cdn.alpinelinux.org/alpine/edge/community
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
-source ../functions.pine
-source ../glib.pine /
-
 apk add --update-cache \
 	wget \
 	git \
@@ -22,7 +19,10 @@ apk add --update-cache \
 	sfdisk \
 	ostree \
 	xfsprogs \
-	grub-bios \
+	grub-bios
+
+source ./functions.pine
+source ./glib.pine /
 
 ## UPX
 UPX_VERSION=`last_version upx/upx`

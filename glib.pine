@@ -1,13 +1,11 @@
 #!/bin/sh
 
-if [ ! -d "$1" ] ; then
-	echo "invalid path, specify root path"
-	exit 1
-fi
-
 ## GLIB
+if [ -n "$1" ] ; then
+	rootp="--root $1"
+fi
 GLIB_VERSION=`last_version sgerrand/alpine-pkg-glibc`
-wget -q -O etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
+wget -q -O $rootp/etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
 wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/$GLIB_VERSION/glibc-$GLIB_VERSION.apk
-apk --initdb --arch x86_64 --allow-untrusted --root $1 add glibc-$GLIB_VERSION.apk
+apk $rootp add glibc-$GLIB_VERSION.apk
 rm glibc-$GLIB_VERSION.apk

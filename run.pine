@@ -7,6 +7,9 @@ source ./functions.pine
 printc "preparing..."
 source ./prepare.pine
 
+source ./extras.pine
+exit
+
 ## init the repo
 printc "initializing the repo..."
 source ./repo.pine

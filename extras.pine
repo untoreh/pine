@@ -1,25 +1,29 @@
 #!/bin/sh
 
+./compress.pine /usr/bin/busybox
+exit
+
 ## DOCKER
-DOCKER_VERSION=`last_version docker/docker`
-wget https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz -O docker.tgz
-tar xf docker.tgz
-mv docker/docker* usr/bin/
-rm -rf docker docker.tgz
-adduser -D docker
+#DOCKER_VERSION=`last_version docker/docker`
+#wget https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz -O docker.tgz
+#tar xf docker.tgz
+#mv docker/docker* usr/bin/
+#rm -rf docker docker.tgz
+#adduser -D docker
 
 ## TERRAFORM
-TERRAFORM_VERSION=`last_version hashicorp/terraform`
-wget https://releases.hashicorp.com/terraform/$TERRAFORM_VERSION/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -O terra.zip
-unzip terra.zip
-mv terraform usr/bin
-rm -rf terra.zip
+#TERRAFORM_VERSION=`last_version hashicorp/terraform`
+#wget https://releases.hashicorp.com/terraform/$TERRAFORM_VERSION/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -O terra.zip
+#unzip terra.zip
+#mv terraform usr/bin
+#rm -rf terra.zip
 
 ## ETCD
 ETCD_VERSION=`last_version coreos/etcd`
 wget https://github.com/coreos/etcd/releases/download/v$ETCD_VERSION/etcd-v$ETCD_VERSION-linux-amd64.tar.gz -O etcd.zip
 tar xf etcd.zip
+mkdir -p usr/bin
 mv etcd*/etcd* usr/bin
 rm -rf etcd*
 
-../compress.pine /usr/bin/terraform /usr/bin/docker* /usr/bin/etcd*
+./compress.pine $PWD/usr/bin/terraform $PWD/usr/bin/docker* $PWD/usr/bin/etcd*
