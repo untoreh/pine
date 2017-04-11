@@ -239,6 +239,7 @@ apkc --update-cache alpine-base \
 	util-linux \
 	xfsprogs \
 	ca-certificates \
+	ethtool \
 	iptables \
 	sudo \
 	ostree \
