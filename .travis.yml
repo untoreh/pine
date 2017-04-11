@@ -3,7 +3,7 @@ language: generic
 services:
 - docker
 script:
-        - docker run -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge ./run.pine
+        - docker run -v $PWD:/srv -v /dev:/dev -v /sys:/sys -v /proc:/proc --privileged --cap-add=ALL -w /srv alpine:edge ./run.pine
 deploy:
   provider: releases
   api_key:
