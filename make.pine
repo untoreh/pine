@@ -159,7 +159,7 @@ iface eth0 inet dhcp
 EOF
 
 ## tunings
-mkdir -p /etc/sysctl.d
+mkdir -p etc/sysctl.d
 cat <<EOF > etc/sysctl.d/01-grsec.conf
 kernel.grsecurity.chroot_deny_fchdir=1
 kernel.grsecurity.chroot_deny_shmat=1
