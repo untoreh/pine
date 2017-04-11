@@ -139,11 +139,9 @@ for r in `cat ../runlevels.pine` ; do
 done
 
 ## GLIB
-source ../functions.pine
 source ../glib.pine $PWD
-
 source ../extras.pine
-exit
+
 ## BOOT
 apkc --no-scripts linux-virtgrsec
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
