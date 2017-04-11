@@ -22,8 +22,6 @@ apk add --update-cache \
 	grub-bios
 
 source ./functions.pine
-## fix for apk deleting /proc... wtf ?
-mount -o remount,ro /proc
 source ./glib.pine /
 
 ## UPX
