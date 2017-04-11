@@ -14,6 +14,7 @@
 /etc/runlevels/sysinit/devfs
 /etc/runlevels/sysinit/mdev
 /etc/runlevels/sysinit/vardirs
+/etc/runlevels/sysinit/knobs
 /etc/runlevels/shutdown/mount-ro
 /etc/runlevels/shutdown/savecache
 /etc/runlevels/shutdown/killprocs

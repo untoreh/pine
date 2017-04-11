@@ -38,7 +38,6 @@ depend()
 
 start() {
 	ebegin "Setting dirs"
-	export RC_NO_UMOUNTS=/usr:$RC_NO_UMOUNTS
 	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/mnt /var/opt /var/roothome /sysroot/ostree /sysroot/tmp
 	ln -s /var/home /sysroot/home &>/dev/null
 	eend $?
@@ -49,6 +48,76 @@ stop() {
 }
 EOF
 chmod +x etc/init.d/vardirs
+
+cat <<EOF > etc/init.d/knobs
+#!/sbin/openrc-run
+
+description="Knobs customizations"
+
+depend()
+{
+	need vardirs
+}
+
+start() {
+	ebegin "Applying tweaks"
+
+	## misc
+	knobs=(
+	"madvise,/sys/kernel/mm/transparent_hugepage/enabled"
+	"madvise,/sys/kernel/mm/transparent_hugepage/defrag"
+	)
+	for i in ${knobs[*]}; do
+		BIFS=$IFS; IFS=','
+		set -- $i
+		val=$1
+		path=$2
+		sudo tee $path <<< $val
+		IFS=$BIFS
+	done
+
+	## disks
+	knobs=(
+	"256,/queue/nr_requests"
+	"0,/queue/rotational"
+	"0,/queue/add_random"
+	"deadline,/queue/scheduler"
+	"4,/queue/iosched/writes_starved"
+	"8,/queue/iosched/fifo_batch"
+	"200,/queue/iosched/read_expire"
+	"4000,/queue/iosched/write_expire"
+	"4096,/queue/read_ahead_kb"
+	"4096,/queue/max_sectors_kb"
+	)
+	BIFS=$IFS
+	IFS=$'\n'
+	for b in `find /sys/block/ | grep -E "/vd.*|/sd.*"` ; do
+		for i in ${knobs[*]}; do
+			BIFS=$IFS; IFS=','
+			set -- $i
+			val=$1
+			path=$2
+			path=${b}${2}
+			sudo tee $path <<< $val
+			IFS=$BIFS
+		done
+	done
+	IFS=$BIFS
+
+	## net
+	for i in `ifconfig | grep -Po "^ens.*?(?=:|\s)|^eth.*?(?=:|\s)"` ; do
+		sudo ethtool -K $i tx on rx on tso on gro on lro on
+		sudo ip link set $i mtu 1500
+	done
+
+	eend $?
+}
+
+stop() {
+	return
+}
+EOF
+chmod +x etc/init.d/knobs
 
 ## mount-ro env var
 mkdir -p etc/conf.d
@@ -87,6 +156,66 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet dhcp
     hostname pine
+EOF
+
+## tunings
+mkdir -p /etc/sysctl.d
+cat <<EOF > etc/sysctl.d/01-grsec.conf
+kernel.grsecurity.chroot_deny_fchdir=1
+kernel.grsecurity.chroot_deny_shmat=1
+kernel.grsecurity.chroot_deny_sysctl=1
+kernel.grsecurity.chroot_deny_unix=1
+kernel.grsecurity.chroot_enforce_chdir=1
+kernel.grsecurity.chroot_findtask=1
+##
+kernel.grsecurity.chroot_caps=1
+kernel.grsecurity.chroot_deny_chmod=1
+kernel.grsecurity.chroot_deny_chroot=1
+kernel.grsecurity.chroot_deny_mknod=1
+kernel.grsecurity.chroot_deny_mount=1
+kernel.grsecurity.chroot_deny_pivot=1
+kernel.grsecurity.chroot_restrict_nice=1
+kernel.pax.softmode=1
+EOF
+cat <<EOF > etc/sysctl.d/02-tweaks.conf
+## mem
+vm.swappiness=10 
+vm.vfs_cache_pressure=40 
+vm.dirty_background_ratio=4 
+vm.dirty_ratio=80 
+vm.overcommit_memory=1 
+vm.overcommit_ratio=100 
+vm.min_free_kbytes=65536 
+kernel.pid_max=4194303 
+fs.file-max=6544018
+
+## net
+net.core.rmem_max=1677721600 
+net.core.rmem_default=167772160 
+net.core.wmem_max=1677721600 
+net.core.wmem_default=167772160 
+net.core.netdev_max_backlog=30000 
+net.core.somaxconn=16384 
+net.core.optmem_max=2048000 
+net.ipv4.tcp_mem=" 1024000 8738000 1677721600" 
+net.ipv4.tcp_rmem=" 1024000 8738000 1677721600" 
+net.ipv4.tcp_wmem=" 1024000 8738000 1677721600" 
+net.ipv4.udp_mem=" 1024000 8738000 1677721600" 
+net.ipv4.tcp_congestion_control=htcp 
+net.ipv4.tcp_window_scaling=1 
+net.ipv4.tcp_sack=0 
+net.ipv4.tcp_dsack=0 
+net.ipv4.tcp_timestamps=0 
+net.ipv4.tcp_early_retrans=1 
+net.ipv4.tcp_app_win=40 
+net.ipv4.tcp_syncookies=1 
+net.ipv4.tcp_no_metrics_save=1
+EOF
+cat <<EOF | sudo tee etc/security/limits.d/files.conf
+*         hard    nofile      917504
+*         soft    nofile      917504
+root      hard    nofile      917504
+root      soft    nofile      917504
 EOF
 
 ## sudo

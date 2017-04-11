@@ -14,4 +14,3 @@ else
 fi
 rm glibc-$GLIB_VERSION.apk
 mount -o remount,rw /proc &>/dev/null
-ls /proc
