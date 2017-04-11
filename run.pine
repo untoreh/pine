@@ -1,17 +1,21 @@
 #!/bin/sh
-
+cn="\033[1;32;40m"
+cf="\033[0m"
+printc(){
+	echo -e "${cn}$@${cf}"
+}
 ## prepare
-echo "preparing..."
+printc "preparing..."
 ./prepare.pine
 
 ## init the repo
-echo "initializing the repo..."
+printc "initializing the repo..."
 ./repo.pine
 
 ## build the tree 
-echo "building the tree..."
+printc "building the tree..."
 ./make.pine
 
 ## build image
-echo "building image..."
+printc "building image..."
 ./build.pine
