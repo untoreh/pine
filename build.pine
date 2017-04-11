@@ -49,3 +49,6 @@ grub-install /dev/loop0 --root-directory=/os
 chroot /os grub-mkconfig -o /boot/grub/grub.cfg
 sync
 umount -l /etc /boot /ostree /os/dev /os/sys /os/proc /os/boot /os/sysroot /os /sysroot &>/dev/null
+
+## compress
+tar cvzf image.pine.tgz image.pine

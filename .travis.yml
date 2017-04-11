@@ -1,0 +1,13 @@
+install: true
+services:
+- docker
+script:
+        - ./run.pine
+deploy:
+  provider: releases
+  api_key:
+  file:
+          - image.pine.tgz
+  skip_cleanup: true
+  on:
+tags: true

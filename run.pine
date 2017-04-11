@@ -1,0 +1,17 @@
+#!/bin/sh
+
+## prepare
+echo "preparing..."
+./prepare.pine
+
+## init the repo
+echo "initializing the repo..."
+./repo.pine
+
+## build the tree 
+echo "building the tree..."
+./make.pine
+
+## build image
+echo "building image..."
+./build.pine
