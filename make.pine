@@ -116,7 +116,7 @@ start() {
 stop() {
 	return
 }
-'EOF'
+EOF
 chmod +x etc/init.d/knobs
 
 ## mount-ro env var
@@ -179,36 +179,36 @@ kernel.pax.softmode=1
 EOF
 cat <<EOF > etc/sysctl.d/02-tweaks.conf
 ## mem
-vm.swappiness=10 
-vm.vfs_cache_pressure=40 
-vm.dirty_background_ratio=4 
-vm.dirty_ratio=80 
-vm.overcommit_memory=1 
-vm.overcommit_ratio=100 
-vm.min_free_kbytes=65536 
-kernel.pid_max=4194303 
+vm.swappiness=10
+vm.vfs_cache_pressure=40
+vm.dirty_background_ratio=4
+vm.dirty_ratio=80
+vm.overcommit_memory=1
+vm.overcommit_ratio=100
+vm.min_free_kbytes=65536
+kernel.pid_max=4194303
 fs.file-max=6544018
 
 ## net
-net.core.rmem_max=1677721600 
-net.core.rmem_default=167772160 
-net.core.wmem_max=1677721600 
-net.core.wmem_default=167772160 
-net.core.netdev_max_backlog=30000 
-net.core.somaxconn=16384 
-net.core.optmem_max=2048000 
-net.ipv4.tcp_mem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_rmem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_wmem=" 1024000 8738000 1677721600" 
-net.ipv4.udp_mem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_congestion_control=htcp 
-net.ipv4.tcp_window_scaling=1 
-net.ipv4.tcp_sack=0 
-net.ipv4.tcp_dsack=0 
-net.ipv4.tcp_timestamps=0 
-net.ipv4.tcp_early_retrans=1 
-net.ipv4.tcp_app_win=40 
-net.ipv4.tcp_syncookies=1 
+net.core.rmem_max=1677721600
+net.core.rmem_default=167772160
+net.core.wmem_max=1677721600
+net.core.wmem_default=167772160
+net.core.netdev_max_backlog=30000
+net.core.somaxconn=16384
+net.core.optmem_max=2048000
+net.ipv4.tcp_mem=1024000 8738000 1677721600
+net.ipv4.tcp_rmem=1024000 8738000 1677721600
+net.ipv4.tcp_wmem=1024000 8738000 1677721600
+net.ipv4.udp_mem=1024000 8738000 1677721600
+net.ipv4.tcp_congestion_control=htcp
+net.ipv4.tcp_window_scaling=1
+net.ipv4.tcp_sack=0
+net.ipv4.tcp_dsack=0
+net.ipv4.tcp_timestamps=0
+net.ipv4.tcp_early_retrans=1
+net.ipv4.tcp_app_win=40
+net.ipv4.tcp_syncookies=1
 net.ipv4.tcp_no_metrics_save=1
 EOF
 mkdir -p etc/security/limits.d
@@ -238,6 +238,7 @@ apkc --update-cache alpine-base \
 	mkinitfs \
 	grub-bios \
 	util-linux \
+	binutils coreutils blkid multipath-tools \
 	xfsprogs \
 	ca-certificates \
 	ethtool \
