@@ -1,8 +1,7 @@
 label: dos
-label-id: 0x00000000
+label-id: 0x7a112e1e
 device: /dev/loop0
 unit: sectors
 
-/dev/loop0p1 : start=          63, size=       48132, type=83, bootable
-/dev/loop0p2 : start=       48195, size=       48195, type=83
-/dev/loop0p3 : start=       96390, size=      417690, type=83
+/dev/loop0p1 : start=        2048, size=      720896, type=83, bootable
+/dev/loop0p2 : start=      722944, size=       63488, type=83

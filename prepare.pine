@@ -14,6 +14,8 @@ apk add --update-cache \
 	xz \
 	bash \
 	coreutils \
+	binutils \
+	multipath-tools \
 	ca-certificates \
 	util-linux \
 	sfdisk \
