@@ -271,8 +271,8 @@ for r in `cat ../runlevels.pine` ; do
 done
 
 ## GLIB
-#source ../glib.pine $PWD
-#source ../extras.pine
+source ../glib.pine $PWD
+source ../extras.pine
 
 ## BOOT
 apkc --no-scripts linux-virtgrsec
