@@ -1,12 +1,7 @@
 #!/bin/bash
 
 cd /srv
-while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
-	findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {}
-	cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {}
-	sleep 1
-done
-losetup -d /dev/loop/0 &>/dev/null
+
 rm -rf /os &>/dev/null
 mkdir -p /os
 
@@ -43,7 +38,13 @@ chroot /os apk add --no-cache binutils coreutils blkid multipath-tools
 chroot /os grub-mkconfig -o /boot/grub/grub.cfg
 exit
 sync
-umount -l /etc /boot /ostree /os/dev /os/sys /os/proc /os/boot /os/sysroot /os /sysroot &>/dev/null
+
+while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
+        findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
+        cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
+        sleep 1
+done
+losetup -d /dev/loop/0 &>/dev/null
 
 ## compress
 tar cvzf image.pine.tgz image.pine
