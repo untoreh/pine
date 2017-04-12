@@ -13,13 +13,11 @@ mkdir -p /os
 dd if=/dev/zero of=image.pine bs=512 count=786432
 losetup -P /dev/loop0 image.pine
 sfdisk /dev/loop0 < layout.pine
-mkfs.xfs -f -L /boot -i size=1024 /dev/loop0p1
-mkfs.xfs -f -L /sysroot -d agcount=8 -i size=1024 /dev/loop0p3
-mkswap /dev/loop0p2
+mkfs.xfs -f -L /sysroot -d agcount=8 -i size=1024 /dev/loop0p1
+mkswap -L swap /dev/loop0p2
 
-mount /dev/loop0p3 /os
+mount /dev/loop0p1 /os
 mkdir -p /os/boot
-mount /dev/loop0p1 /os/boot
 mkdir -p /os/sysroot
 mount --rbind /os /os/sysroot
 
@@ -32,7 +30,7 @@ dpl=`find /os/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
 mount --bind $dpl $dpl
 mount --bind /os $dpl/sysroot
 mount --move $dpl /os
-mount /dev/loop0p1 /os/boot
+#mount /dev/loop0p1 /os/boot
 
 mount --bind /dev/ /os/dev
 mount --bind /sys  /os/sys
@@ -45,8 +43,9 @@ mount --bind /os/boot /boot
 mount --bind /os/ostree /ostree
 
 grub-install /dev/loop0 --root-directory=/os
-# grub-mkconfig -o /os/boot/grub/grub.cfg
-chroot /os grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /os/boot/grub/grub.cfg
+#chroot /os grub-mkconfig -o /boot/grub/grub.cfg
+exit
 sync
 umount -l /etc /boot /ostree /os/dev /os/sys /os/proc /os/boot /os/sysroot /os /sysroot &>/dev/null
 
