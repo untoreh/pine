@@ -116,7 +116,7 @@ start() {
 stop() {
 	return
 }
-'EOF'
+EOF
 chmod +x etc/init.d/knobs
 
 ## mount-ro env var
