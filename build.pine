@@ -39,9 +39,9 @@ mount --bind /sys  /os/sys
 mount --bind /proc /os/proc
 
 grub-install /dev/loop0 --root-directory=/os
-chroot /os apk add --no-cache binutils coreutils blkid multipath-tools
+# chroot /os apk add --no-cache binutils coreutils blkid multipath-tools
 chroot /os grub-mkconfig -o /boot/grub/grub.cfg
-exit
+
 sync
 umount -l /etc /boot /ostree /os/dev /os/sys /os/proc /os/boot /os/sysroot /os /sysroot &>/dev/null
 
