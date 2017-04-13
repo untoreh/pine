@@ -251,7 +251,7 @@ apkc --update-cache alpine-base \
 	util-linux \
 	binutils coreutils blkid multipath-tools \
 	xfsprogs \
-	ca-certificates \
+	ca-certificates wget \
 	ethtool \
 	iptables \
 	sudo \
