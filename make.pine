@@ -56,65 +56,75 @@ description="Knobs customizations"
 
 depend()
 {
-	need vardirs
+        need vardirs
 }
 
 start() {
-	ebegin "Applying tweaks"
+        ebegin "Applying tweaks"
 
-	## misc
-	knobs=(
-	"madvise,/sys/kernel/mm/transparent_hugepage/enabled"
-	"madvise,/sys/kernel/mm/transparent_hugepage/defrag"
-	)
-	for i in ${knobs[*]}; do
-		BIFS=$IFS; IFS=','
-		set -- $i
-		val=$1
-		path=$2
-		sudo tee $path <<< $val
-		IFS=$BIFS
-	done
+        ## misc
+        knobs="madvise,/sys/kernel/mm/transparent_hugepage/enabled
+madvise,/sys/kernel/mm/transparent_hugepage/defrag"
 
-	## disks
-	knobs=(
-	"256,/queue/nr_requests"
-	"0,/queue/rotational"
-	"0,/queue/add_random"
-	"deadline,/queue/scheduler"
-	"4,/queue/iosched/writes_starved"
-	"8,/queue/iosched/fifo_batch"
-	"200,/queue/iosched/read_expire"
-	"4000,/queue/iosched/write_expire"
-	"4096,/queue/read_ahead_kb"
-	"4096,/queue/max_sectors_kb"
-	)
-	BIFS=$IFS
-	IFS=$'\n'
-	for b in `find /sys/block/ | grep -E "/vd.*|/sd.*"` ; do
-		for i in ${knobs[*]}; do
-			BIFS=$IFS; IFS=','
-			set -- $i
-			val=$1
-			path=$2
-			path=${b}${2}
-			sudo tee $path <<< $val
-			IFS=$BIFS
-		done
-	done
-	IFS=$BIFS
+        for i in $knobs; do
+                BIFS=$IFS; IFS=','
+                set -- $i
+                val=$1
+                path=$2
+                echo $val | tee $path &>/dev/null
+                IFS=$BIFS
+        done
 
-	## net
-	for i in `ifconfig | grep -Po "^ens.*?(?=:|\s)|^eth.*?(?=:|\s)"` ; do
-		sudo ethtool -K $i tx on rx on tso on gro on lro on
-		sudo ip link set $i mtu 1500
-	done
+        ## disks
+        knobs="256,/queue/nr_requests
+0,/queue/rotational
+0,/queue/add_random
+deadline,/queue/scheduler
+4,/queue/iosched/writes_starved
+8,/queue/iosched/fifo_batch
+200,/queue/iosched/read_expire
+4000,/queue/iosched/write_expire
+4096,/queue/read_ahead_kb
+4096,/queue/max_sectors_kb"
 
-	eend $?
+        BIFS=$IFS
+        IFS=$'\n'
+        eindent
+        for b in `find /sys/block/ | grep -E "/vd.*|/sd.*"` ; do
+                for i in $knobs; do
+                        BIFS=$IFS; IFS=','
+                        set -- $i
+                        val=$1
+                        path=$2
+                        path=${b}${2}
+                        eindent
+                        if [ -f $path ] ; then
+                                if ! $(echo $val > $path 2>/dev/null) ; then
+                                        ewarn "${2} can't be applied"
+                                fi
+                        else
+                                ewarn "${2} not available"
+                        fi
+                        eoutdent
+                        IFS=$BIFS
+                done
+        done
+        IFS=$BIFS
+
+        ## net
+        for i in `ifconfig | grep -Eo "^enp[0-9]*s[0-9]*|^eth[0-9]*"` ; do
+                inff=$(ethtool -K $i tx on rx on tso on gro on lro on 2>&1)
+                for l in $inff ; do
+                        einfo "$l"
+                done
+                $(ip link set $i mtu 1500)
+        done
+        eoutdent
+        eend $?
 }
 
 stop() {
-	return
+        return
 }
 EOF
 chmod +x etc/init.d/knobs
