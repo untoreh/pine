@@ -1,16 +1,16 @@
 # Pine
 Alpine Linux on OSTree.
 
-#### Install
+### Install
 `flash` pulls the latest image from github and dumps it
 on the on specified device.
 
-#### Server
+### Server
 `serve` re-sets up a tz2 ostree repo from built image and 
 starts the server to allow ostree clients to update to
 the latest version.
 
-#### Usage
+### Usage
 `run` creates the image to push on github.
 
 #### TODO
