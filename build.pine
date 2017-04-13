@@ -39,7 +39,7 @@ chroot /os grub-mkconfig -o /boot/loader/grub.cfg
 ln -sr /os/boot/loader/grub.cfg /os/boot/grub/grub.cfg
 
 sync
-exit
+
 while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
         findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
         cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
