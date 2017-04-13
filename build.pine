@@ -35,15 +35,14 @@ mount --bind /proc /os/proc
 
 grub-install /dev/loop0 --root-directory=/os
 ln -sr /os/boot/{grub,grub2}
-mkdir -p /os/boot/loader.0
-ln -sr sysroot/boot/{loader.0,loader}
 chroot /os grub-mkconfig -o /boot/loader/grub.cfg
+ln -sr /os/boot/loader/grub.cfg /os/boot/grub/grub.cfg
 
 sync
-
+exit
 while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
-        findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {}
-        cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {}
+        findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
+        cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
         sleep 1
 done
 losetup -d /dev/loop/0 &>/dev/null
