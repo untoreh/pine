@@ -140,6 +140,7 @@ cat <<EOF > etc/fstab
 /dev/vda2		swap		swap	defaults 0 0
 /boot			/sysroot/boot	none 	bind 0 0
 /ostree/deploy/pine/var /var 		none	bind 0 0
+/tmp			tmpfs		tmpfs	defaults,nosuid,nodev 0 0
 EOF
 
 ## repositories
