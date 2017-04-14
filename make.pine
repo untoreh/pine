@@ -262,7 +262,7 @@ apkc --update-cache alpine-base \
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
 ## grub2 link for ostree compatibility
-ln -s usr/sbin/{grub-mkconfig,grub2-mkconfig}
+ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
 
 ## SETUP
 chpwd() {

@@ -7,7 +7,15 @@ cleanup() {
 		losetup -d /dev/loop$lon
 	} &>/dev/null
 }
-trap cleanup SIGINT SIGTERM EXIT
+#trap cleanup SIGINT SIGTERM EXIT
+case $1 in
+	-t )
+	trap cleanup SIGINT SIGTERM EXIT ;;
+	-c )
+	cleanup ; exit ;;
+	* ) ;;
+esac
+
 
 cat <<EOF > /etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
@@ -25,6 +33,7 @@ for t in $tools ; do
     fi
 done
 $setup && apk add --no-cache $toinst
+
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
@@ -33,6 +42,7 @@ cd imgtmp
 if [ ! -f image.pine ] ; then
 	wget -qO- $img_url | tar xz -O | dd of=$PWD/image.pine
 fi
+
 lon=0
 while [ `losetup -P /dev/loop$lon $PWD/image.pine` ] ; do
     lon=$((lon+1))
@@ -41,7 +51,7 @@ done
 
 ## p3 is the root partition
 mkdir -p loroot
-mount /dev/loop${lon}p3 loroot
+mount -o nouuid /dev/loop${lon}p3 loroot
 
 ## init a tz2 repo
 mkdir -p /srv/repo
@@ -51,5 +61,5 @@ ostree --repo=/srv/repo init --mode=archive-z2
 ostree --repo=/srv/repo pull-local loroot/ostree/repo trunk
 
 ## start the server
-ulimit -n 8192
-caddy -root /srv/repo -host 169.254.34.196 -port 30303 # 0.0.0.0 -port 30303
+ulimit -n 65535
+caddy -root /srv/repo -port 30303
