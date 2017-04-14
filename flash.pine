@@ -2,13 +2,15 @@
 
 case "$1" in
     -a )
-    device=`find /dev 2>/dev/null | grep -E "/vd.*|/sd.*|/hd.*" | sort | head -n1`
-    auto=true ;;
+    device=`find /dev 2>/dev/null | grep -E "/vd.*|/sd.*|/hd.*" | sort | head -n1` ;;
+    '' )
+    echo "-a uses the first device found, or specify a device path."
+    exit ;;
     * )
-    device=$1
+    device=$1 ;;
 esac
 
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
-wget -qO- $img_url | tar xz -O | dd of=$device bs=512
+wget -qO- $img_url | tar xz -O | dd of=$device
