@@ -1,0 +1,44 @@
+#!/bin/sh
+
+tools="ostree losetup"
+setup=false
+for t in $tools ; do
+    if [ ! `which $t` ] ; then
+        setup=true
+        break
+    fi
+done
+$setup && apk add --no-cache $toinst
+
+img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | head -n 1 | cut -d '"' -f 4`
+echo $img_url
+
+mkdir imgtmp
+mount -t tmpfs tmpfs imgtmp
+cd imgtmp
+wget -qO- $img_url | tar xz -O | dd of=image.pine
+
+lon=0
+while ! $(losetup -P /dev/loop$lon image.pine) ; do
+    lon=$((lon+1))
+done
+
+## p3 is the root partition
+mkdir loroot
+mount /dev/loop${lon}p3 loroot
+
+## init a tz2 repo
+mkdir /srv/repo
+ostree --repo=/srv/repo init --mode=archive-z2
+
+## parse the bare repo into the archive
+ostree --repo=/srv/repo pull-local loroot/ostree/repo trunk
+
+## start the server
+ostree trivial-httpd -P 30303 -d /srv/repo
+
+## cleanup
+umount loroot
+cd -
+umount imgtmp
+rm imgtmp -rf
