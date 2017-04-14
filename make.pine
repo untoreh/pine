@@ -1,4 +1,5 @@
 #!/bin/bash
+source functions.pine
 
 mkdir -p /srv/tree
 cd /srv/tree
@@ -301,25 +302,18 @@ apkc(){
 	apk --arch x86_64 --allow-untrusted --root $PWD --initdb add $@
 }
 
-apkc --update-cache alpine-base \
-	tzdata \
-	mkinitfs \
-	grub-bios \
-	util-linux \
-	binutils coreutils blkid multipath-tools \
-	xfsprogs \
-	ca-certificates wget \
-	ethtool \
-	iptables \
-	sudo \
-	ostree \
+apkc --update-cache alpine-base sudo tzdata \
+	mkinitfs grub-bios xfsprogs \
+	util-linux binutils coreutils blkid multipath-tools \
+	ca-certificates wget ethtool iptables \
+	ostree git \
 	`apk info -R docker | sed '/so:/q' | tail -n +4 | head -n -1` \
 	htop iftop sysstat mosh-server tmux 
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
 ## grub2 link for ostree compatibility
-ln -s usr/sbin/{grub-mkconfig,grub2-mkconfig}
+ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
 
 ## SETUP
 chpwd() {

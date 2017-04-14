@@ -1,4 +1,5 @@
 #!/bin/sh
+source functions.pine
 
 cat <<EOF > /etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
@@ -8,11 +9,11 @@ http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
 apk add --update-cache \
+    bash \
 	wget \
 	git \
 	unzip \
 	xz \
-	bash \
 	coreutils \
 	blkid \
 	binutils \

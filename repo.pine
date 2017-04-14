@@ -1,4 +1,5 @@
 #!/bin/bash
+source functions.pine
 
 cd /srv
 rm -rf pine tree

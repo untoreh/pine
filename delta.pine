@@ -1,4 +1,11 @@
-#!/bin/sh
+#!/bin/bash
+source functions.pine
+
+## confirm we made a new tree
+if [ ! "`find tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
+    echo "newer tree not grown. (tree folder is empty)"
+    exit 1
+fi
 
 cleanup() {
 	{
@@ -24,7 +31,7 @@ http://dl-cdn.alpinelinux.org/alpine/edge/community
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
-tools="ostree util-linux wget caddy"
+tools="ostree util-linux wget"
 setup=false
 for t in $tools ; do
     if [ -z "`apk info -e $t`" ] ; then
@@ -37,6 +44,7 @@ $setup && apk add --no-cache $toinst
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
+h=$PWD
 mkdir -p imgtmp
 cd imgtmp
 if [ ! -f image.pine ] ; then
@@ -54,12 +62,14 @@ mkdir -p loroot
 mount -o nouuid /dev/loop${lon}p3 loroot
 
 ## init a tz2 repo
-mkdir -p /srv/repo
-ostree --repo=/srv/repo init --mode=archive-z2
+mkdir -p prepine
+ostree --repo=prepine init --mode=archive-z2
 
 ## parse the bare repo into the tz2 repo
-ostree --repo=/srv/repo pull-local loroot/ostree/repo trunk
+ostree --repo=prepine pull-local loroot/ostree/repo trunk
 
-## start the server
-ulimit -n 65535
-caddy -root /srv/repo -port 30303
+## now commit the new tree to the old repo
+rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}tree)
+
+## then generate the delta
+ostree --repo=prepine static-delta generate trunk --inline --filename=${rev}.raw
