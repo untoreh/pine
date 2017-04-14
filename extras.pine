@@ -1,12 +1,24 @@
 #!/bin/sh
 
+## use edge packages for docker and etcd to avoid hard coding init services,
+## also terraform lags behind in updates and does not include any additional configs, so
+## install it manually
+
 ## DOCKER
-DOCKER_VERSION=`last_version docker/docker`
-wget -q https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz -O docker.tgz
-tar xf docker.tgz
-mv docker/docker* usr/bin/
-rm -rf docker docker.tgz
-adduser -D docker
+#DOCKER_VERSION=`last_version docker/docker`
+#wget -q https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz -O docker.tgz
+#tar xf docker.tgz
+#mv docker/docker* usr/bin/
+#rm -rf docker docker.tgz
+#adduser -D docker
+
+## ETCD
+#ETCD_VERSION=`last_version coreos/etcd`
+#wget -q https://github.com/coreos/etcd/releases/download/v$ETCD_VERSION/etcd-v$ETCD_VERSION-linux-amd64.tar.gz -O etcd.zip
+#tar xf etcd.zip
+#mkdir -p usr/bin
+#mv etcd*/etcd* usr/bin
+#rm -rf etcd*
 
 ## TERRAFORM
 TERRAFORM_VERSION=`last_version hashicorp/terraform`
@@ -15,12 +27,6 @@ unzip terra.zip
 mv terraform usr/bin
 rm -rf terra.zip
 
-## ETCD
-ETCD_VERSION=`last_version coreos/etcd`
-wget -q https://github.com/coreos/etcd/releases/download/v$ETCD_VERSION/etcd-v$ETCD_VERSION-linux-amd64.tar.gz -O etcd.zip
-tar xf etcd.zip
-mkdir -p usr/bin
-mv etcd*/etcd* usr/bin
-rm -rf etcd*
+apkc docker etcd
 
 ../compress.pine $PWD/usr/bin/terraform $PWD/usr/bin/docker* $PWD/usr/bin/etcd*
