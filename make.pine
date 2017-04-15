@@ -1,4 +1,5 @@
 #!/bin/bash
+source functions.pine
 
 mkdir -p /srv/tree
 cd /srv/tree
