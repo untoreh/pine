@@ -36,7 +36,7 @@ mount --bind /proc /os/proc
 grub-install /dev/loop0 --root-directory=/os
 ln -sr /os/boot/{grub,grub2}
 chroot /os grub-mkconfig -o /boot/loader/grub.cfg
-ln -sr /os/boot/loader/grub.cfg /os/boot/grub/grub.cfg
+cd /os && ln -s boot/loader/grub.cfg boot/grub/grub.cfg && cd -
 
 sync
 
