@@ -19,7 +19,7 @@ case $1 in
 	-t )
 	trap cleanup SIGINT SIGTERM EXIT ;;
 	-c )
-	cleanup ; exit ;;
+	cleanup ; losetup -D ; exit ;;
 	* ) ;;
 esac
 
@@ -52,7 +52,7 @@ if [ ! -f image.pine ] ; then
 fi
 
 lon=0
-while [ `losetup -P /dev/loop$lon $PWD/image.pine` ] ; do
+while [ -z "`losetup -P /dev/loop$lon $PWD/image.pine && echo true`" ] ; do
     lon=$((lon+1))
     sleep 1
 done
@@ -69,7 +69,8 @@ ostree --repo=prepine init --mode=archive-z2
 ostree --repo=prepine pull-local loroot/ostree/repo trunk
 
 ## now commit the new tree to the old repo
-rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}tree)
+rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
 
-## then generate the delta
-ostree --repo=prepine static-delta generate trunk --inline --filename=${rev}.raw
+## then generate the delta and archive it
+ostree --repo=prepine static-delta generate trunk --inline --filename=${h}/${rev}
+tar cf delta.tar $rev
