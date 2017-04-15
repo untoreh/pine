@@ -307,8 +307,7 @@ apkc --update-cache alpine-base sudo tzdata \
 	util-linux binutils coreutils blkid multipath-tools \
 	ca-certificates wget ethtool iptables \
 	ostree git \
-	`apk info -R docker | sed '/so:/q' | tail -n +4 | head -n -1` \
-	htop iftop sysstat mosh-server tmux 
+	htop iftop sysstat mosh-server tmux
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux

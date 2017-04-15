@@ -41,7 +41,7 @@ for t in $tools ; do
 done
 $setup && apk add --no-cache $toinst
 
-img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | head -n 1 | cut -d '"' -f 4`
+img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
 h=$PWD
@@ -73,4 +73,5 @@ rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}/t
 
 ## then generate the delta and archive it
 ostree --repo=prepine static-delta generate trunk --inline --filename=${h}/${rev}
+cd ${h}
 tar cf delta.tar $rev

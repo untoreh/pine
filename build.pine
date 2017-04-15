@@ -39,7 +39,7 @@ chroot /os apk add --no-cache binutils coreutils blkid multipath-tools
 chroot /os grub-mkconfig -o /boot/grub/grub.cfg
 exit
 sync
-exit
+
 while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
         findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
         cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
