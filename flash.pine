@@ -10,7 +10,7 @@ case "$1" in
     device=$1 ;;
 esac
 
-img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | head -n 1 | cut -d '"' -f 4`
+img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
 wget -qO- $img_url | tar xz -O | dd of=$device
