@@ -7,7 +7,7 @@ cleanup() {
 		losetup -d /dev/loop$lon
 	} &>/dev/null
 }
-#trap cleanup SIGINT SIGTERM EXIT
+
 case $1 in
 	-t )
 	trap cleanup SIGINT SIGTERM EXIT ;;

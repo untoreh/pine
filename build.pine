@@ -36,16 +36,18 @@ mount --bind /proc /os/proc
 
 grub-install /dev/loop0 --root-directory=/os
 ln -sr /os/boot/{grub,grub2}
-chroot /os grub-mkconfig -o /boot/loader/grub.cfg
-cd /os && ln -s boot/loader/grub.cfg boot/grub/grub.cfg && cd -
+chroot /os grub-mkconfig -o /boot/loader.1/grub.cfg
+cd /os/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
 
 sync
-
+exit
 while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
         findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
         cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
         sleep 1
 done
+xfs_repair /dev/loop0p1
+xfs_repair /dev/loop0p3
 losetup -d /dev/loop/0 &>/dev/null
 
 ## compress
