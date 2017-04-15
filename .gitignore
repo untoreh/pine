@@ -1,6 +1,7 @@
 image.pine
 image.pine.tgz
 delta
+*.raw
 tree/
 pine/
 imgtmp/
