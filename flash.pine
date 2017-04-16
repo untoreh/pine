@@ -10,8 +10,13 @@ case "$1" in
     device=$1 ;;
 esac
 
+## get busybox for rebooting
+mkdir pivot && mount -t tmpfs tmpfs pivot && cd pivot
+wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+chmod +x busybox
+
+## get image url
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
-reboot -d 120
-wget -qO- $img_url | tar xz -O | dd of=$device
+wget -qO- $img_url | tar xz -O | dd of=$device bs=512 conv=notrunc,fsync ; ./busybox reboot
