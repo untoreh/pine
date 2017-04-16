@@ -72,6 +72,6 @@ ostree --repo=prepine pull-local loroot/ostree/repo trunk
 rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
 
 ## then generate the delta and archive it
-ostree --repo=prepine static-delta generate trunk --inline --filename=${h}/${rev}
+ostree --repo=prepine static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev}
 cd ${h}
 tar cf delta.tar $rev
