@@ -10,7 +10,10 @@ script:
 - docker exec pinect ./run.pine
 before_deploy:
 - docker exec pinect ./delta.pine
+- ls
 - cd $workdir
+- ls
+- ls imgtmp
 deploy:
   provider: releases
   api_key:
