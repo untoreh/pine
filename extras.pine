@@ -5,6 +5,7 @@
 ## install it manually
 
 ## DOCKER
+#`apk info -R docker | sed '/so:/q' | tail -n +4 | head -n -1` \
 #DOCKER_VERSION=`last_version docker/docker`
 #wget -q https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz -O docker.tgz
 #tar xf docker.tgz
