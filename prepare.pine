@@ -28,11 +28,3 @@ apk add --update-cache \
 
 source ./functions.pine
 source ./glib.pine
-
-## UPX
-UPX_VERSION=`last_version upx/upx`
-upxn="upx-$UPX_VERSION-amd64_linux"
-wget https://github.com/upx/upx/releases/download/v$UPX_VERSION/$upxn.tar.xz
-tar xf $upxn.tar.xz 2>/dev/null
-mv $upxn/upx /usr/bin/
-rm -rf $upxn $upxn.tar.xz
