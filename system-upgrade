@@ -81,6 +81,7 @@ if [ ! $curV = $lasV ]; then
         cd $work
         ## get the delta file, upgrade
         get_delta
+        get_commit
         apply_upgrade
     fi
 fi
