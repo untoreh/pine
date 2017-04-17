@@ -1,6 +1,22 @@
 #!/bin/bash
 source functions.pine
 
+## get previous release
+prevV=`pine_version`
+## prev date
+prevD=`echo $prevV | cut -d- -f1`
+## prev build number
+prevN=`echo $prevV | cut -d- -f2`
+## gen new release number
+newD=`date +%y.%m`
+if [ $prevD = $newD ] ; then
+    newN=$((prevN+1))
+    else
+    newN=0
+fi
+export newV=$newD-$newN
+printc "$newV is the new version"
+
 mkdir -p /srv/tree
 cd /srv/tree
 
@@ -11,7 +27,7 @@ while `mountpoint -q ./dev` ; do
 	umount dev
 done
 while `mountpoint -q ./sys` ; do
-	        umount sys
+	umount sys
 done
 
 rm -rf ./*
@@ -25,6 +41,9 @@ ln -s var/mnt mnt
 ln -s var/opt opt
 ln -s sysroot/ostree ostree
 ln -s sysroot/tmp tmp
+
+## save the new version number
+echo -n "$newV" > etc/pine
 
 mkdir -p etc/init.d
 cat <<EOF > etc/init.d/vardirs
@@ -157,7 +176,6 @@ mkdir -p etc/apk
 cat <<EOF > etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
-http://dl-cdn.alpinelinux.org/alpine/edge/community
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
