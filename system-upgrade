@@ -38,6 +38,10 @@ get_delta() {
         echo "error: failed downloading the new delta."
         exit 1
     fi
+    get_commit
+}
+
+get_commit() {
     ## the delta file name is also the commit number
     export cmt=$(basename $(find | grep -E [a-z0-9]{64}))
 }
@@ -82,7 +86,6 @@ if [ ! $curV = $lasV ]; then
         cd $work
         ## get the delta file, upgrade
         get_delta
-        get_commit
         apply_upgrade
     fi
 fi
