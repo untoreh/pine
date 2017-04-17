@@ -31,7 +31,7 @@ wrap_up() {
 
 get_delta() {
     ## download delta
-    wget https://github.com/${repo}/releases/download/${lasV}/delta.tar -O delta.tar
+    wget -nv https://github.com/${repo}/releases/download/${lasV}/delta.tar -O delta.tar
     ## deltas can't be piped
     tar xf delta.tar && rm delta.tar
 }
