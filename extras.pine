@@ -28,6 +28,14 @@ unzip terra.zip
 mv terraform usr/bin
 rm -rf terra.zip
 
+## LOCKSMITH
+LOCKSMITH_VERSION=`last_version coreos/locksmith`
+wget -q https://github.com/coreos/locksmith/archive/v${LOCKSMITH_VERSION}.tar.gz -O locksmith.tar.gz
+tar xf locksmith.tar.gz
+cd locksmith* && ./build && mv bin/locksmithctl ../usr/bin && ln -sr ../usr/bin/locksmithctl ../usr/bin/locksmithd && cd -
+rm -rf locksmith*
+
+## use alpine packages
 apkc docker etcd
 
 ../compress.pine $PWD/usr/bin/terraform $PWD/usr/bin/docker* $PWD/usr/bin/etcd*

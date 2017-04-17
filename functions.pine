@@ -6,7 +6,13 @@ printc(){
         echo -e "${cn}$@${cf}"
 }
 
+git_versions() {
+    git ls-remote -t git://github.com/"$1".git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//'
+}
+pine_version() {
+    git_versions untoreh/pine | sort -bt- -k1nr -k2nr | head -1
+}
 last_version() {
-        git ls-remote -t git://github.com/"$1".git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -b -t . -k 1,1nr -k 2,2nr -k 3,3r -k 4,4r -k 5,5r | head -1
+    git_versions $1 | sort -bt. -k1nr -k2nr -k3r -k4r -k5r | head -1
 }
 

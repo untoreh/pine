@@ -23,7 +23,8 @@ apk add --update-cache \
 	sfdisk \
 	ostree \
 	xfsprogs \
-	grub-bios
+	grub-bios \
+	go musl-dev `# for locksmith` \
 
 source ./functions.pine
 source ./glib.pine
