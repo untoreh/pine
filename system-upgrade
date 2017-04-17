@@ -38,11 +38,8 @@ get_delta() {
         echo "error: failed downloading the new delta."
         exit 1
     fi
-}
-
-get_commit() {
     ## the delta file name is also the commit number
-    cmt=$(basename $(find | grep -E [a-z0-9]{64}))
+    export cmt=$(basename $(find | grep -E [a-z0-9]{64}))
 }
 
 apply_upgrade() {
