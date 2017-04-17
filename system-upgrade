@@ -31,9 +31,13 @@ wrap_up() {
 
 get_delta() {
     ## download delta
-    wget -nv https://github.com/${repo}/releases/download/${lasV}/delta.tar -O delta.tar
+    wget -q https://github.com/${repo}/releases/download/${lasV}/delta.tar -O delta.tar
     ## deltas can't be piped
     tar xf delta.tar && rm delta.tar
+    if [ -f delta.tar ]; then
+        echo "error: failed downloading the new delta."
+        exit 1
+    fi
 }
 
 get_commit() {
