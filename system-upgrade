@@ -52,8 +52,8 @@ apply_upgrade() {
     ## if no upgrade was done
     if [ ! $upg ]; then
         ostree static-delta apply-offline $cmt
+        upg=$(ostree admin upgrade --override-commit=$cmt | grep -q "Transaction complete" && true)
     fi
-    upg=$(ostree admin upgrade --override-commit=$cmt | grep -q "Transaction complete" && true)
 }
 
 ## get the current version
