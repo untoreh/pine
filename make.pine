@@ -17,6 +17,7 @@ fi
 export newV=$newD-$newN
 printc "$newV is the new version"
 
+## tree init
 mkdir -p /srv/tree
 cd /srv/tree
 
@@ -34,6 +35,7 @@ rm -rf ./*
 
 mkdir -p dev sys proc run boot var/home var/mnt var/opt var/roothome sysroot/ostree sysroot/tmp usr/bin usr/sbin usr/lib usr/lib64  usr/etc
 
+## links
 ln -s usr/etc etc
 ln -s var/home home
 ln -s var/roothome root
@@ -325,7 +327,7 @@ apkc --update-cache alpine-base sudo tzdata \
 	util-linux binutils coreutils blkid multipath-tools \
 	ca-certificates wget ethtool iptables \
 	ostree git \
-	htop iftop sysstat mosh-server tmux
+	htop iftop sysstat mosh-server tmux dropbear-ssh dropbear-scp
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
@@ -346,10 +348,15 @@ chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 chpwd setup-ntp -c busybox
 
+## SERVICES
 for r in `cat ../runlevels.pine` ; do
 	mkdir -p `dirname $r`
 	ln -srf etc/init.d/`basename $r` `echo "$r" | sed 's#^/##'`
 done
+
+## UPDATES/REBOOTS
+cp ../system-upgrade etc/periodic/daily
+chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
 source ../glib.pine $PWD

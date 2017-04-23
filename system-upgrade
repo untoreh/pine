@@ -11,10 +11,14 @@
 ## - ostree admin upgrade is supposed to be atomic, we run it before recreating
 ## the ref in case it was interrupted,
 
+## sanity check
+which ostree &>/dev/null || echo "Not an ostree installation, terminating." && exit 1
+
 ## vars
 repo=untoreh/pine
 ref=trunk
 work=/var/tmp/pine-upgrade
+rc-update show default | grep clearlock && echo
 
 ## funcs
 wrap_up() {
@@ -23,7 +27,7 @@ wrap_up() {
     ## finish
     if [ $upg ]; then
         echo -e "$curV updated to:\n$lasV -- $cmt\n@ $(date)\nrebooting..."
-        reboot -d 10
+        reboot lock queue -d 10
     else
         echo -e "$curV checked for updates.\n@ $(date)"
     fi

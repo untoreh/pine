@@ -1,0 +1,85 @@
+#!/bin/sh
+
+if [ "$1" != lock ] ; then
+    shift
+    exec /bin/busybox reboot $@
+fi
+
+lock_queue(){
+    ## start locking
+    lockcheck=/tmp/$(date | base64)
+    etcdctl lock reboot 1>$lockcheck & lockpid=$!
+
+    ## wait for lock acquisition
+    while [ -z "$(cat $lockcheck 2>/dev/nul)" ] ; do sleep 1 ; done
+}
+
+unlock_queue(){
+    ## clear the lock
+    kill -s SIGINT $lockpid
+}
+
+etcd_reboot_clear(){
+    ## check if the reboot flag for the current node is set and delete it and clear 1 from the reboot queue
+    cl=""
+    while [ -z "$cl" ]; do
+        cl=$(
+    cat <<EOF | etcdctl txn | grep -oE 'SUCCESS|FAILURE'
+create("${qr}_${NODE}") > "0"
+
+del ${qr}_${NODE}
+
+
+## OK
+EOF
+    )
+    done
+    ## if we cleared the node reboot flag, decrement the reboot queue
+    if [ "$cl" = "SUCCESS" ] ; then
+        q=$(etcdctl get $qr --print-value-only)
+        [ $q -gt 0 ] && etcdctl put $qr $((q-1))
+    fi
+}
+
+etcd_reboot(){
+    lock_queue
+
+    ## wait for the queue to have room
+    while
+    c=$(etcdctl get $qr --print-value-only 2>/dev/null)
+    [ -z "$c" ] || [ $c -ge $max ] ; do sleep 1
+    done
+    ## update the reboot queue
+    ## set the reboot flag for the node
+    cat <<EOF | etcdctl txn
+create("$qr") > "0"
+
+put $qr $((c+1))
+put ${qr}_${NODE} 1
+
+put $qr 0
+put ${qr}_${NODE} 1
+
+## OK
+EOF
+
+    unlock_queue
+
+    ## reboot
+    echo -e "rebooting... @ $(date)"
+    shift
+    exec /bin/busybox reboot $@
+}
+
+## setup vars
+source /etc/network-environment
+[ -z "$NODE" -o -z "$ETCDCTL_ENDPOINTS" ] && echo "error: empty NODE id or ETCDCTL_ENDPOINTS, check /etc/network-environment" && exit 1
+export ETCDCTL_API=${ETCDCTL_API:-3} ETCDCTL_ENDPOINTS
+qr=q_reboot ## key for reboot queue
+max=1 ## max concurrent reboots
+shift
+
+case "$1" in
+    clear) etcd_reboot_clear ;;
+    queue) etcd_reboot $@ ;;
+esac
