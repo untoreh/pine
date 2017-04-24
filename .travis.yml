@@ -9,8 +9,8 @@ before_script:
 script:
 - docker exec pinect ./run.pine
 after_success:
-- export TRAVIS_TAG=$(cat tree/usr/etc/pine)
-- git tag $TRAVIS_TAG -m "[skip ci]"
+# - [[ "$TRAVIS_EVENT_TYPE" == cron ]] && export TRAVIS_TAG=$(cat tree/usr/etc/pine)
+- [[ "$TRAVIS_EVENT_TYPE" == cron ]] && export TRAVIS_TAG=$(cat tree/usr/etc/pine)
 before_deploy:
 - docker exec pinect ./delta.pine
 deploy:
