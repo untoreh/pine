@@ -1,17 +1,20 @@
 #!/bin/bash
+
 source functions.pine
 
 ## get previous release
-prevV=`pine_version`
+# prevV=`pine_version` ## remotely
+prevV=`git tag --sort=committerdate | tail -1` ## locally
+
 ## prev date
 prevD=`echo $prevV | cut -d- -f1`
 ## prev build number
 prevN=`echo $prevV | cut -d- -f2`
 ## gen new release number
 newD=`date +%y.%m`
-if [ $prevD = $newD ] ; then
-    newN=$((prevN+1))
-    else
+if [ $prevD = $newD ]; then
+    newN=$((prevN + 1))
+else
     newN=0
 fi
 export newV=$newD-$newN
@@ -21,19 +24,19 @@ printc "$newV is the new version"
 mkdir -p /srv/tree
 cd /srv/tree
 
-while `mountpoint -q ./proc` ; do
-	umount proc
+while `mountpoint -q ./proc`; do
+    umount proc
 done
-while `mountpoint -q ./dev` ; do
-	umount dev
+while `mountpoint -q ./dev`; do
+    umount dev
 done
-while `mountpoint -q ./sys` ; do
-	umount sys
+while `mountpoint -q ./sys`; do
+    umount sys
 done
 
 rm -rf ./*
 
-mkdir -p dev sys proc run boot var/home var/mnt var/opt var/roothome sysroot/ostree sysroot/tmp usr/bin usr/sbin usr/lib usr/lib64  usr/etc
+mkdir -p dev sys proc run boot var/home var/mnt var/opt var/roothome sysroot/ostree sysroot/tmp usr/bin usr/sbin usr/lib usr/lib64 usr/etc
 
 ## links
 ln -s usr/etc etc
@@ -45,10 +48,10 @@ ln -s sysroot/ostree ostree
 ln -s sysroot/tmp tmp
 
 ## save the new version number
-echo -n "$newV" > etc/pine
+echo -n "$newV" >etc/pine
 
 mkdir -p etc/init.d
-cat <<'EOF' > etc/init.d/vardirs
+cat << 'EOF' >etc/init.d/vardirs
 #!/sbin/openrc-run
 
 description="Create targets for ostree deployments"
@@ -73,6 +76,7 @@ chmod +x etc/init.d/vardirs
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 cat <<'EOF' > etc/init.d/knobs
 =======
 cat <<EOF > etc/init.d/knobs
@@ -80,6 +84,9 @@ cat <<EOF > etc/init.d/knobs
 =======
 cat <<'EOF' > etc/init.d/knobs
 >>>>>>> 7735df6... .
+=======
+cat << 'EOF' >etc/init.d/knobs
+>>>>>>> eb17261... fixed symlinks build error
 #!/sbin/openrc-run
 
 description="Knobs customizations"
@@ -161,10 +168,10 @@ chmod +x etc/init.d/knobs
 
 ## mount-ro env var
 mkdir -p etc/conf.d
-echo "RC_NO_UMOUNTS=/usr" > etc/conf.d/mount-ro
+echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 
 ## fstab
-cat <<EOF > etc/fstab
+cat << EOF >etc/fstab
 /dev/vda3               /               xfs     rw,noatime,nodiratime,largeio,inode64,nobarrier 0 0
 /dev/vda1		/boot		xfs 	rw,noexec,nodev,noatime,nodiratime,largeio,inode64 0 0
 /dev/vda2		swap		swap	defaults 0 0
@@ -175,21 +182,21 @@ EOF
 
 ## repositories
 mkdir -p etc/apk
-cat <<EOF > etc/apk/repositories
+cat << EOF >etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
 ## nameservers
-cat <<EOF > etc/resolv.conf
+cat << EOF >etc/resolv.conf
 nameserver 8.8.8.8
 nameserver 2001:4860:4860:0:0:0:0:8888
 EOF
 
 ## net
 mkdir -p etc/network
-cat <<EOF > etc/network/interfaces
+cat << EOF >etc/network/interfaces
 auto lo
 iface lo inet loopback
 
@@ -207,8 +214,12 @@ mkdir -p /etc/sysctl.d
 >>>>>>> d53bb0f... .
 =======
 mkdir -p etc/sysctl.d
+<<<<<<< HEAD
 >>>>>>> 19ae522... .
 cat <<EOF > etc/sysctl.d/01-grsec.conf
+=======
+cat << EOF >etc/sysctl.d/01-grsec.conf
+>>>>>>> eb17261... fixed symlinks build error
 kernel.grsecurity.chroot_deny_fchdir=1
 kernel.grsecurity.chroot_deny_shmat=1
 kernel.grsecurity.chroot_deny_sysctl=1
@@ -225,7 +236,7 @@ kernel.grsecurity.chroot_deny_pivot=1
 kernel.grsecurity.chroot_restrict_nice=1
 kernel.pax.softmode=1
 EOF
-cat <<EOF > etc/sysctl.d/02-tweaks.conf
+cat << EOF >etc/sysctl.d/02-tweaks.conf
 ## mem
 <<<<<<< HEAD
 vm.swappiness=10
@@ -261,6 +272,7 @@ net.ipv4.tcp_syncookies=1
 net.ipv4.tcp_no_metrics_save=1
 EOF
 mkdir -p etc/security/limits.d
+<<<<<<< HEAD
 cat <<EOF > etc/security/limits.d/files.conf
 =======
 vm.swappiness=10 
@@ -302,6 +314,9 @@ cat <<EOF | sudo tee etc/security/limits.d/files.conf
 mkdir -p etc/security/limits.d
 cat <<EOF > etc/security/limits.d/files.conf
 >>>>>>> 5ca453e... .
+=======
+cat << EOF >etc/security/limits.d/files.conf
+>>>>>>> eb17261... fixed symlinks build error
 *         hard    nofile      917504
 *         soft    nofile      917504
 root      hard    nofile      917504
@@ -310,7 +325,7 @@ EOF
 
 ## sudo
 mkdir -p etc/sudoers.d
-cat <<EOF > etc/sudoers.d/pine
+cat << EOF >etc/sudoers.d/pine
 pine ALL=(ALL) NOPASSWD: ALL
 EOF
 
@@ -318,16 +333,16 @@ mount --bind /sys sys
 mount --bind /proc proc
 mount --bind /dev dev
 
-apkc(){
-	apk --arch x86_64 --allow-untrusted --root $PWD --initdb add $@
+apkc() {
+    apk --arch x86_64 --allow-untrusted --root $PWD --initdb add $@
 }
 
-apkc --update-cache alpine-base sudo tzdata \
-	mkinitfs grub-bios xfsprogs \
-	util-linux binutils coreutils blkid multipath-tools \
-	ca-certificates wget ethtool iptables \
-	ostree git \
-	htop iftop sysstat mosh-server tmux dropbear-ssh dropbear-scp
+apkc --update-cache alpine-base sudo tzdata  \
+ mkinitfs grub-bios xfsprogs  \
+ util-linux binutils coreutils blkid multipath-tools  \
+ ca-certificates wget ethtool iptables  \
+ ostree git  \
+ htop iftop sysstat mosh-server tmux dropbear-ssh dropbear-scp
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
@@ -336,22 +351,23 @@ ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
 
 ## SETUP
 chpwd() {
-	chroot $PWD $@
+    chroot $PWD $@
 }
+
 hostname=pine
 chpwd echo "root:rootppp" | chpwd chpasswd
 chpwd adduser pine -D
 chpwd echo "pine:pineppp" | chpwd chpasswd
-echo '' > etc/motd
+echo '' >etc/motd
 chpwd setup-hostname $hostname
 chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 chpwd setup-ntp -c busybox
 
 ## SERVICES
-for r in `cat ../runlevels.pine` ; do
-	mkdir -p `dirname $r`
-	ln -srf etc/init.d/`basename $r` `echo "$r" | sed 's#^/##'`
+for r in `cat ../runlevels.pine`; do
+    mkdir -p `dirname $r`
+    ln -srf etc/init.d/`basename $r` `echo "$r" | sed 's#^/##'`
 done
 
 ## UPDATES/REBOOTS
@@ -365,9 +381,9 @@ source ../extras.pine
 ## BOOT
 apkc --no-scripts linux-virtgrsec
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
-chroot $PWD mkinitfs \
-	-F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio" \
-	$(basename `ls -d lib/modules/*`)
+chroot $PWD mkinitfs  \
+ -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \
+ $(basename `ls -d lib/modules/*`)
 mv boot tmpboot && mkdir boot
 cp -a tmpboot/vmlinuz-virtgrsec boot/
 cp -a tmpboot/initramfs-virtgrsec boot/
@@ -381,14 +397,14 @@ rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
 
 ## CLEANUP
-while `mountpoint -q ./proc` ; do
-	umount proc
+while `mountpoint -q ./proc`; do
+    umount proc
 done
-while `mountpoint -q ./dev` ; do
-	umount dev
+while `mountpoint -q ./dev`; do
+    umount dev
 done
-while `mountpoint -q ./sys` ; do
-	umount sys
+while `mountpoint -q ./sys`; do
+    umount sys
 done
 rm dev var run etc -rf
 mkdir -p dev var run usr/lib usr/bin usr/sbin
