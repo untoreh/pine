@@ -64,6 +64,7 @@ stop() {
 }
 EOF
 chmod +x etc/init.d/clearlock
+rm sbin/reboot ## remove to avoid following symlink during copy
 cp ../reboot.pine sbin/reboot
 chmod +x sbin/reboot
 
