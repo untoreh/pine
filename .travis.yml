@@ -4,7 +4,6 @@ language: generic
 services:
 - docker
 before_script:
-- env
 - docker run -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge /bin/sleep 36000
 script:
 - docker exec pinect ./run.pine
