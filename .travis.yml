@@ -9,7 +9,7 @@ script:
 - docker exec pinect ./run.pine
 after_success:
 - |
-  export TRAVIS_TAG=$(cat tree/usr/etc/pine)
+  [[ "$TRAVIS_EVENT_TYPE" == cron ]] && export TRAVIS_TAG=$(cat tree/usr/etc/pine)
 before_deploy:
 - docker exec pinect ./delta.pine
 deploy:
@@ -21,4 +21,5 @@ deploy:
     - "delta.tar"
   skip_cleanup: true
   on:
-    tags: true
+    condition: |
+      [[ -n "$TRAVIS_COMMIT_RANGE" || "$TRAVIS_EVENT_TYPE" == cron ]]
