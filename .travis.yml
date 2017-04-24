@@ -7,10 +7,11 @@ before_script:
 - docker run -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge /bin/sleep 36000
 script:
 - docker exec pinect ./run.pine
-before_deploy:
-- docker exec pinect ./delta.pine
+after_script:
 - export TRAVIS_TAG=$(cat tree/usr/etc/pine)
 - git tag $TRAVIS_TAG
+before_deploy:
+- docker exec pinect ./delta.pine
 deploy:
   provider: releases
   api_key:
