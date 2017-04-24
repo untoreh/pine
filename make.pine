@@ -48,7 +48,7 @@ ln -s sysroot/tmp tmp
 echo -n "$newV" > etc/pine
 
 mkdir -p etc/init.d
-cat <<EOF > etc/init.d/vardirs
+cat <<'EOF' > etc/init.d/vardirs
 #!/sbin/openrc-run
 
 description="Create targets for ostree deployments"

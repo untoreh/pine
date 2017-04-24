@@ -13,12 +13,12 @@ mv docker/docker* usr/bin/
 rm -rf docker docker.tgz
 
 ## ETCD
-cat << EOF >usr/bin/etcdctl
+cat << 'EOF' >usr/bin/etcdctl
 #!/bin/sh
 
 exec docker exec -e ETCDCTL_API=${ETCDCTL_API:-3} -it $(docker ps -f name=etcd -q) etcdctl $@
 EOF
-cat << EOF >etc/init.d/etcd
+cat << 'EOF' >etc/init.d/etcd
 #!/sbin/openrc-run
 
 ## Stub service to wait for the etcd container to start
@@ -41,7 +41,7 @@ EOF
 ## REBOOT MANAGER
 ## - The clearlock scripts dequeues the node from the list stored on etcd after boot
 ## - the reboot command is wrapped with a script to also support reboot locking
-cat << EOF >etc/init.d/clearlock
+cat << 'EOF' >etc/init.d/clearlock
 #!/sbin/openrc-run
 
 description="Create targets for ostree deployments"
@@ -75,7 +75,7 @@ export GOPATH=/go
 go get -u github.com/pressly/sup/cmd/sup
 mv /go/bin/sup usr/bin/sup.bin
 cp ../Supfile etc/
-cat << EOF >usr/bin/sup
+cat << 'EOF' >usr/bin/sup
 #!/bin/sh
 SUP_FILE=/etc/Supfile
 if $(echo "$@" | grep -qE "\-f\s+[^\s]+\s*") ; then
