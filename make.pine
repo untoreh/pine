@@ -172,12 +172,12 @@ echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 
 ## fstab
 cat << EOF >etc/fstab
-/dev/vda3               /               xfs     rw,noatime,nodiratime,largeio,inode64,nobarrier 0 0
-/dev/vda1		/boot		xfs 	rw,noexec,nodev,noatime,nodiratime,largeio,inode64 0 0
-/dev/vda2		swap		swap	defaults 0 0
-/boot			/sysroot/boot	none 	bind 0 0
-/ostree/deploy/pine/var /var 		none	bind 0 0
-tmpfs			/tmp		tmpfs	defaults,nosuid,nodev 0 0
+/dev/bd3                 /              xfs    rw,noatime,nodiratime,largeio,inode64,nobarrier     0  0
+/dev/bd1                 /boot          xfs    rw,noexec,nodev,noatime,nodiratime,largeio,inode64  0  0
+/dev/bd2                 swap           swap   defaults                                            0  0
+/boot                    /sysroot/boot  none   bind                                                0  0
+/ostree/deploy/pine/var  /var           none   bind                                                0  0
+tmpfs                    /tmp           tmpfs  defaults,nosuid,nodev                               0  0
 EOF
 
 ## repositories

@@ -49,5 +49,6 @@ xfs_repair /dev/loop0p1
 xfs_repair /dev/loop0p3
 losetup -d /dev/loop/0 &>/dev/null
 
-## compress
-tar cvzf image.pine.tgz image.pine
+## checksum and compress
+sha256sum image.pine > image.pine.sum
+tar cvzf image.pine.tgz image.pine image.pine.sum
