@@ -6,7 +6,7 @@ Alpine Linux on OSTree.
 on the on specified device.
 
 ```
-wget  https://min.gitcdn.link/repo/untoreh/pine/master/flash.pine -qO - | sh -s /dev/vda
+wget https://cdn.rawgit.com/untoreh/pine/997ef562/flash.pine -qO - | sh -s /dev/vda
 ```
 
 
