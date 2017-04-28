@@ -1,10 +1,12 @@
 #!/bin/sh
 
 case "$1" in
-    -a )
-    device=`find /dev 2>/dev/null | grep -E "/vd.*|/sd.*|/hd.*" | sort | head -n1` ;;
-    '' )
-    echo "-a uses the first device found, or specify a device path.
+    -a)
+        export device=`find /dev 2>/dev/null -maxdepth 1 |  \
+ grep -E "/vd.*|/sd.*|/hd.*" |  \
+ sort | head -n1` ;;
+    '')
+        echo "-a uses the first device found, or specify a device path.
 Network config is copied over if found, or it is generated from the current
 session, or it is possble to use environment variables to specify
 network configuration, example:
@@ -12,38 +14,44 @@ interface=eth0
 address=192.168.1.100
 netmask=255.255.255.0
 gateway=192.168.1.1"
-    exit ;;
-    * )
-    device=$1 ;;
+        exit ;;
+    *)
+        export device=$1 ;;
 esac
 
+## apparently a tmpfs mount causes corruption.../dev/shm does (?)
+#mkdir -p pivot && mount -t tmpfs tmpfs pivot && cd pivot
+mount -o remount,exec /dev/shm
+cd /dev/shm
 
-
-## get busybox for rebooting
-mkdir pivot && mount -t tmpfs tmpfs pivot && cd pivot
-#wet https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+## get busybox for rebooting (not needed because we create a chroot to customize
+## the system)
+#wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
 #chmod +x busybox
 
 ## copy network interfaces
-if [ -f /etc/network/interfaces ] ; then
+if [ -f /etc/network/interfaces ]; then
     cp /etc/network/interfaces ./
 fi
 
 ## setup alp-base to get tools to mount the image to customize it before flashing
-apkt=`wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/ -qO- | \
-grep -oE '"apk-tools-static.*.apk"' | sed 's/"//g'`
+apkt=`wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/ -qO- |  \
+ grep -oE '"apk-tools-static.*.apk"' | sed 's/"//g'`
 wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/$apkt
 tar xzf $apkt
 ln -sr sbin/apk.static sbin/apk
-sbin/apk.static -X http://dl-cdn.alpinelinux.org/alpine/latest-stable/main -U \
---allow-untrusted --root ./ --initdb add alpine-base xfsprogs util-linux wget \
-ca-certificates
+sbin/apk.static -X http://dl-cdn.alpinelinux.org/alpine/latest-stable/main -U  \
+ --allow-untrusted --root ./ --initdb add alpine-base xfsprogs util-linux wget  \
+ ca-certificates coreutils
 cp /etc/resolv.conf etc/
 mkdir -p proc sys dev tmp run mnt
-mount --move /dev dev
-mount --move /sys sys
-mount --move /proc /proc
-chroot ./
+mount --bind /dev dev
+mount --bind /sys sys
+mount --bind /proc proc
+cat << 'CEOF' >customize.pine
+## pass device name
+device=$1
+
 ## get image url
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 echo $img_url
@@ -65,7 +73,7 @@ mount /dev/loop0p3 rootfs/
 
 dpl=`find rootfs/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
 ## setup network
-if [ -f "./interfaces" && -z "$iface" ]; then
+if [ -f "./interfaces" -a -z "$iface" ]; then
     mv ./interfaces ${dpl}/usr/etc/network/interfaces
 else
     if [ -z "$iface" ]; then
@@ -94,8 +102,12 @@ sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $device)'\2#' -i ${dpl}/etc/fstab
 ## unmount the image and flash
 umount rootfs/
 losetup -D
+sync
 dd if=image.pine of=$device bs=512 conv=notrunc,fsync
 
 ## reboot
-echo "rebooting in 3..."; sleep 1; echo "2..."; sleep 1; echo "1..."; sleep 1;
+echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; sleep 1;
 reboot
+CEOF
+chmod +x customize.pine
+chroot ./ /bin/sh -x customize.pine $device
