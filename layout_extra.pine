@@ -1,0 +1,8 @@
+label: dos
+label-id: 0x5adb74c8
+device: /dev/loop0
+unit: sectors
+
+/dev/loop0p4 : start=     786432, size=      5368709120, type=83
+/dev/loop0p4 : start=     5369495552,size=      5369495552, type=83
+/dev/loop0p5 : start=     5637931008, size=      10737418240, type=83

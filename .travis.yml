@@ -15,6 +15,7 @@ deploy:
     secure: NJ3UBflN76WmG/OqO3OZ0aXWUGXCJoZib0DrRdw8Z9KOmpqHTjT7WD+UU65mq39ea6k45aMw3iZv6LYslc1e6LwnJPVt4bg8R8zbSVTv4EQOxvo36eBrZLlxst1GU7fAqq9v7QFBbbQFVkDN9zLkGutZSvTHxxfSnNMX23ohmvaa1LfKX8Ta95BXCh4INOahdgog9KO9Zg/fNe09D7pAjayMQPKSiZ02F9FNsMhSkLW9R2s6Scc/6/V4XdKQK7XFhmFAmVTh/qeYjak9eX/X+8Ojv2KE+wSfyJSt+96WeUXwj17qH1V5kQiKZYlgwxIm1oMClkDtiCdnrlaLLYyc+JJ4xUOz67gwBNXgoa0JTVNlPRjNlfo7sIGY470wZx5LlZW5w+d2vi/fa9FtsHaREat8Di01d51XgP/lafs9L3k9BlHjONTHhpKBvY/5D0bMT3s0E9m5YBpyUsHnctb0LiYih10vJ/zERaOIJ/Motoi8UXtW13xu5myzshJCRv9i4IVgG4nIP7I0zm6bFmNy4IyPZOBGyYKj1D2XQN8q5nz8DHdAwMrLy+RGrnzx2UXh5+9Z6CVyGxWjZl8OSZa9sF3ZmrKmcPRqiG+U3PFddS7p8oGV/N+XE6hhxXW93G6gFyXv6fWtPSMPGW8j7qgzmJgGewPK99Z+eZ/SIQ3Z4Vo=
   file:
     - "image.pine.tgz"
+    - "image.pine.sum"
     - "delta.tar"
   skip_cleanup: true
   on:

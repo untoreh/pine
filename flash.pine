@@ -4,19 +4,98 @@ case "$1" in
     -a )
     device=`find /dev 2>/dev/null | grep -E "/vd.*|/sd.*|/hd.*" | sort | head -n1` ;;
     '' )
-    echo "-a uses the first device found, or specify a device path."
+    echo "-a uses the first device found, or specify a device path.
+Network config is copied over if found, or it is generated from the current
+session, or it is possble to use environment variables to specify
+network configuration, example:
+interface=eth0
+address=192.168.1.100
+netmask=255.255.255.0
+gateway=192.168.1.1"
     exit ;;
     * )
     device=$1 ;;
 esac
 
+
+
 ## get busybox for rebooting
 mkdir pivot && mount -t tmpfs tmpfs pivot && cd pivot
-wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
-chmod +x busybox
+#wet https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+#chmod +x busybox
 
+## copy network interfaces
+if [ -f /etc/network/interfaces ] ; then
+    cp /etc/network/interfaces ./
+fi
+
+## setup alp-base to get tools to mount the image to customize it before flashing
+apkt=`wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/ -qO- | \
+grep -oE '"apk-tools-static.*.apk"' | sed 's/"//g'`
+wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/$apkt
+tar xzf $apkt
+ln -sr sbin/apk.static sbin/apk
+sbin/apk.static -X http://dl-cdn.alpinelinux.org/alpine/latest-stable/main -U \
+--allow-untrusted --root ./ --initdb add alpine-base xfsprogs util-linux wget \
+ca-certificates
+cp /etc/resolv.conf etc/
+mkdir -p proc sys dev tmp run mnt
+mount --move /dev dev
+mount --move /sys sys
+mount --move /proc /proc
+chroot ./
 ## get image url
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
-wget -qO- $img_url | tar xz -O | dd of=$device bs=512 conv=notrunc,fsync ; ./busybox reboot
+## direct piping allows for fast flashing on low ram but can't verify checksum and
+## setup networking devices and drives
+#wget -qO- $img_url | tar xz -O | dd of=$device bs=512 conv=notrunc,fsync
+
+## download and extract the image
+wget -qO- $img_url | tar xz
+## verify checksum (included with the image archive)
+cat image.pine.sum | sha256sum -c -
+## mount the image on loop device
+losetup -P /dev/loop0 image.pine
+
+## mount the partition of interest (3)
+mkdir rootfs
+mount /dev/loop0p3 rootfs/
+
+dpl=`find rootfs/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
+## setup network
+if [ -f "./interfaces" && -z "$iface" ]; then
+    mv ./interfaces ${dpl}/usr/etc/network/interfaces
+else
+    if [ -z "$iface" ]; then
+        iface=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*" | head -1)
+        address=$(ip -4 addr | grep eth0 | grep inet | sed -r 's~.*inet\s*([^ ]*).*~\1~' | head -1)
+        netmask=$(busybox ipcalc $address -m | cut -d= -f2) ## used from the busybox applet
+        gateway=$(ip -4 route | grep $iface | head -1 | sed -r 's/default via ([^\s ]*).*/\1/')
+    fi
+
+    cat << EOF >${dpl}/usr/etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto $iface
+iface $iface inet static
+    address $address
+    netmask $netmask
+    gateway $gateway
+    hostname pine
+EOF
+fi
+
+## fix drive names
+sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $device)'\2#' -i ${dpl}/etc/fstab
+
+## unmount the image and flash
+umount rootfs/
+losetup -D
+dd if=image.pine of=$device bs=512 conv=notrunc,fsync
+
+## reboot
+echo "rebooting in 3..."; sleep 1; echo "2..."; sleep 1; echo "1..."; sleep 1;
+reboot
