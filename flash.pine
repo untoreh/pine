@@ -2,7 +2,7 @@
 
 case "$1" in
     -a)
-        export device=`find /dev 2>/dev/null -maxdepth 1 |  \
+        export DEVICE=`find /dev 2>/dev/null -maxdepth 1 |  \
  grep -E "/vd.*|/sd.*|/hd.*" |  \
  sort | head -n1` ;;
     '')
@@ -10,27 +10,42 @@ case "$1" in
 Network config is copied over if found, or it is generated from the current
 session, or it is possble to use environment variables to specify
 network configuration, example:
-interface=eth0
-address=192.168.1.100
-netmask=255.255.255.0
-gateway=192.168.1.1"
+INTERFACE=eth0
+ADDRESS=192.168.1.100
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1"
         exit ;;
     *)
-        export device=$1 ;;
+        export DEVICE=$1 ;;
 esac
 
-## apparently a tmpfs mount causes corruption.../dev/shm does (?)
-#mkdir -p pivot && mount -t tmpfs tmpfs pivot && cd pivot
-mount -o remount,exec /dev/shm
-cd /dev/shm
+## mount tmpfs
+mkdir -p pivot && mount -t tmpfs -o exec tmpfs pivot
+cd pivot
+
+## give chroot capabilities
+sysctl -w  \
+ kernel.grsecurity.chroot_deny_fchdir=0  \
+ kernel.grsecurity.chroot_deny_shmat=0  \
+ kernel.grsecurity.chroot_deny_sysctl=0  \
+ kernel.grsecurity.chroot_deny_unix=0  \
+ kernel.grsecurity.chroot_enforce_chdir=0  \
+ kernel.grsecurity.chroot_findtask=0  \
+ kernel.grsecurity.chroot_caps=0  \
+ kernel.grsecurity.chroot_deny_chmod=0  \
+ kernel.grsecurity.chroot_deny_chroot=0  \
+ kernel.grsecurity.chroot_deny_mknod=0  \
+ kernel.grsecurity.chroot_deny_mount=0  \
+ kernel.grsecurity.chroot_deny_pivot=0  \
+ kernel.grsecurity.chroot_restrict_nice=0 &>/dev/null
 
 ## get busybox for rebooting (not needed because we create a chroot to customize
 ## the system)
-#wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
-#chmod +x busybox
+wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+chmod +x busybox
 
 ## copy network interfaces
-if [ -f /etc/network/interfaces ]; then
+if [ "$(cat /etc/network/interfaces | grep -v lo | grep inet | wc -l)" -gt 0 ]; then
     cp /etc/network/interfaces ./
 fi
 
@@ -45,12 +60,13 @@ sbin/apk.static -X http://dl-cdn.alpinelinux.org/alpine/latest-stable/main -U  \
  ca-certificates coreutils
 cp /etc/resolv.conf etc/
 mkdir -p proc sys dev tmp run mnt
+## tree must be binded and not moved to allow the kernel to update partition tables
 mount --bind /dev dev
 mount --bind /sys sys
 mount --bind /proc proc
 cat << 'CEOF' >customize.pine
 ## pass device name
-device=$1
+DEVICE=$1
 
 ## get image url
 img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
@@ -58,56 +74,100 @@ echo $img_url
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
 ## setup networking devices and drives
-#wget -qO- $img_url | tar xz -O | dd of=$device bs=512 conv=notrunc,fsync
+#wget -qO- $img_url | tar xz -O | dd of=$DEVICE bs=512 conv=notrunc,fsync
 
 ## download and extract the image
 wget -qO- $img_url | tar xz
 ## verify checksum (included with the image archive)
 cat image.pine.sum | sha256sum -c -
 ## mount the image on loop device
-losetup -P /dev/loop0 image.pine
+/sbin/losetup -P /dev/loop0 image.pine
+## wait for partitions to be created
+while [ ! -e /dev/loop0p3 ] ; do /sbin/losetup -P /dev/loop0 image.pine ; sleep 1;
+done
 
 ## mount the partition of interest (3)
 mkdir rootfs
-mount /dev/loop0p3 rootfs/
+mount -t xfs -o nouuid /dev/loop0p3 rootfs/
 
 dpl=`find rootfs/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
 ## setup network
-if [ -f "./interfaces" -a -z "$iface" ]; then
-    mv ./interfaces ${dpl}/usr/etc/network/interfaces
+if [ -f "./interfaces" -a -z "$IFACE" ]; then
+    awk '!seen[$0]++' ./interfaces > interfaces.cleaned
+    mv interfaces.cleaned ${dpl}/etc/network/interfaces
 else
-    if [ -z "$iface" ]; then
-        iface=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*" | head -1)
-        address=$(ip -4 addr | grep eth0 | grep inet | sed -r 's~.*inet\s*([^ ]*).*~\1~' | head -1)
-        netmask=$(busybox ipcalc $address -m | cut -d= -f2) ## used from the busybox applet
-        gateway=$(ip -4 route | grep $iface | head -1 | sed -r 's/default via ([^\s ]*).*/\1/')
+    if [ -z "$IFACE" ]; then
+        IFACE=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*" | head -1)
+        ADDRESS=$(ip -4 addr | grep $IFACE | grep inet | sed -r 's~.*inet\s*([^ ]*).*~\1~' | head -1)
+        NETMASK=$(busybox ipcalc $ADDRESS -m | cut -d= -f2) ## used from the busybox applet
+        GATEWAY=$(ip -4 route | grep $IFACE | head -1 | sed -r 's/default via ([^\s ]*).*/\1/')
     fi
 
-    cat << EOF >${dpl}/usr/etc/network/interfaces
+    cat << EOF >${dpl}/etc/network/interfaces
 auto lo
 iface lo inet loopback
 
-auto $iface
-iface $iface inet static
-    address $address
-    netmask $netmask
-    gateway $gateway
+auto $IFACE
+iface $IFACE inet static
+    address $ADDRESS
+    netmask $NETMASK
+    gateway $GATEWAY
     hostname pine
 EOF
 fi
 
-## fix drive names
-sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $device)'\2#' -i ${dpl}/etc/fstab
+## fix drive names and add new partitions
+## if using default partitions ("/var" and "/share") replace the /var mount (5) while
+## the "/share" device is mounted by the sharing service (docker or the chosen DFS)
+sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $DEVICE)'\2#' -i ${dpl}/etc/fstab
+if [ -z "$PARTS" ] ; then
+    PARTS=5G,256M
+    DP_F=true
+    ## note the number 5, the partition number, extended is 4, var is 5
+    var_line="${DEVICE}5    /var    xfs rw,noatime,nodiratime,largeio,inode64,nobarrier 0   0"
+    sed -r 's~/ostree.*/var.*/var.*~'"${var_line}"'~' -i ${dpl}/etc/fstab
+    ## tabulate fstab
+    cat ${dpl}/etc/fstab | sed -r 's/\s+/ /g' | column -t -s' ' >tmpfstab
+    mv tmpfstab ${dpl}/etc/fstab
+fi
 
 ## unmount the image and flash
 umount rootfs/
+xfs_repair /dev/loop0p1
+xfs_repair /dev/loop0p3
+
 losetup -D
 sync
-dd if=image.pine of=$device bs=512 conv=notrunc,fsync
+dd if=image.pine of=$DEVICE bs=512 conv=notrunc,fsync
+
+## setup additional partitions, (4) is extended partition so it is skipped
+## init extended partition
+part_str='n\ne\n\n\n'
+## add logical partitions
+IFS=,
+for p in ${PARTS} ; do
+    part_str=$part_str'n\n\n+'$p'\n'
+done
+unset IFS
+## append last partition
+if [ "$DP_F" ] ; then
+    part_str=$part_str'n\n\n\n'
+fi
+## write statement
+part_str=$part_str'w\n'
+## execute fdisk
+echo -e $part_str | fdisk $DEVICE
+partx -u ${DEVICE}
+while [ ! -e ${DEVICE}4 ] ; do sleep 1; done
+if [ "$DP_F" ] ; then
+    mkfs.xfs -f -L /var -d agcount=8 -i size=1024 ${DEVICE}5
+    mkfs.xfs -f -L /share -d agcount=8 -l logdev=${DEVICE}6,size=65536b -i size=1024 ${DEVICE}7
+fi
 
 ## reboot
+sync
 echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; sleep 1;
-reboot
+reboot -f
 CEOF
 chmod +x customize.pine
-chroot ./ /bin/sh -x customize.pine $device
+./busybox chroot ./ /bin/busybox sh customize.pine $DEVICE

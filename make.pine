@@ -36,7 +36,7 @@ done
 
 rm -rf ./*
 
-mkdir -p dev sys proc run boot var/home var/mnt var/opt var/roothome sysroot/ostree sysroot/tmp usr/bin usr/sbin usr/lib usr/lib64 usr/etc
+mkdir -p dev sys proc run boot var/home var/mnt var/opt var/srv var/roothome sysroot/ostree sysroot/tmp usr/bin usr/sbin usr/lib usr/lib64 usr/etc
 
 ## links
 ln -s usr/etc etc
@@ -44,6 +44,7 @@ ln -s var/home home
 ln -s var/roothome root
 ln -s var/mnt mnt
 ln -s var/opt opt
+ln -s var/srv srv
 ln -s sysroot/ostree ostree
 ln -s sysroot/tmp tmp
 
@@ -63,8 +64,8 @@ depend()
 
 start() {
 	ebegin "Setting dirs"
-	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/mnt /var/opt /var/roothome /sysroot/ostree /sysroot/tmp
-	ln -s /var/home /sysroot/home &>/dev/null
+	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/mnt /var/opt /var/srv /var/roothome /sysroot/ostree /sysroot/tmp
+	ln -srnf /sysroot/home /var/home &>/dev/null
 	eend $?
 }
 
