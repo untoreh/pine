@@ -393,6 +393,11 @@ mv boot/vmlinuz-virtgrsec boot/vmlinuz-virtgrsec-${cksum}
 mv boot/initramfs-virtgrsec boot/initramfs-virtgrsec-${cksum}
 rm tmpboot -rf
 
+## KERNEL MODULES
+KVER=$(cat usr/share/kernel/virtgrsec/kernel.release)
+mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
+cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
+
 ## FIXES
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache

@@ -5,6 +5,7 @@ services:
 - docker
 before_script:
 - docker run -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge /bin/sleep 36000
+- docker run --privileged --cap-add=ALL -v $PWD:/host ubuntu /host/beegfs.pine
 script:
 - docker exec pinect ./run.pine
 before_deploy:
