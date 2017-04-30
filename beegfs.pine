@@ -45,4 +45,4 @@ cd -
 /etc/init.d/beegfs-client rebuild
 
 ## copy module over /host
-cp -a /lib/modules/4.4.59-0-virtgrsec/updates/fs/beegfs_autobuild /host
+cp -a /lib/modules/4.4.59-0-virtgrsec/updates/fs/beegfs_autobuild/* /host
