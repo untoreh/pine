@@ -12,7 +12,7 @@
 ## the ref in case it was interrupted,
 
 ## sanity check
-which ostree &>/dev/null || echo "Not an ostree installation, terminating." && exit 1
+which ostree &>/dev/null || ( echo "Not an ostree installation, terminating." && exit 1 )
 
 ## vars
 repo=untoreh/pine
