@@ -47,7 +47,7 @@ h=$PWD
 mkdir -p imgtmp
 cd imgtmp
 if [ ! -f image.pine ] ; then
-    wget -qO- $img_url | tar xz -O | dd of=$PWD/image.pine
+    wget -qO- $img_url | tar xzf - image.pine
 fi
 
 lon=0
