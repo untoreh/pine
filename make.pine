@@ -3,26 +3,12 @@
 source functions.pine
 
 ## get previous release
-## prevV=`pine_version` ## this does not account for gh releases same as "git tag"
 prevV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
- grep image.pine | awk '/browser_download_url/ { print $2 }' | head -1 \
-| sed -r 's~.*/download/(.*)/.*~\1~'`
-## if fetching locally should get the second entry because the first is the current
-## travis build
+ awk '/tag_name/ { print $2 }' | head -1 | sed -r 's/",?//g'`
+## prevV=`pine_version` ## this does not account for gh releases same as "git tag"
+## local tag checks
 # prevV=`git tag --sort=committerdate | tail -1`
 
-## prev date
-prevD=`echo $prevV | cut -d- -f1`
-## prev build number
-prevN=`echo $prevV | cut -d- -f2`
-## gen new release number
-newD=`date +%y.%m`
-if [ $prevD = $newD ]; then
-    newN=$((prevN + 1))
-else
-    newN=0
-fi
-export newV=$newD-$newN
 printc "$newV is the new version"
 
 ## tree init
