@@ -1,0 +1,117 @@
+#!/bin/bash
+source functions.pine
+
+## confirm we made a new tree
+if [ ! "`find tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
+    echo "newer tree not grown. (tree folder is empty)"
+    exit 1
+fi
+
+cleanup() {
+    {
+        umount loroot
+        cd -
+        losetup -d /dev/loop$lon
+    } &>/dev/null
+}
+
+case $1 in
+    -t )
+        trap cleanup SIGINT SIGTERM EXIT ;;
+    -c )
+        cleanup ; losetup -D ; exit ;;
+    * ) ;;
+esac
+
+
+cat <<EOF > /etc/apk/repositories
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
+http://dl-cdn.alpinelinux.org/alpine/edge/testing
+EOF
+
+tools="ostree util-linux wget"
+setup=false
+for t in $tools ; do
+    if [ -z "`apk info -e $t`" ] ; then
+        setup=true
+        toinst="$toinst $t"
+    fi
+done
+$setup && apk add --no-cache $toinst
+
+img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+echo $img_url
+
+h=$PWD
+mkdir -p imgtmp
+cd imgtmp
+if [ ! -f image.pine ] ; then
+    wget -qO- $img_url | tar xz -O | dd of=$PWD/image.pine
+fi
+
+lon=0
+while [ -z "`losetup -P /dev/loop$lon $PWD/image.pine && echo true`" ] ; do
+    lon=$((lon+1))
+    sleep 1
+done
+
+## p3 is the root partition
+mkdir -p /upos
+mount -o nouuid /dev/loop${lon}p3 /upos
+## p1 is the boot partition
+mkdir -p /upos/boot
+mount -o nouuid /dev/loop${lon}p1 /upos/boot
+
+## now commit the new tree to the old repo
+## the image has to have enough space for commits...
+rev=$(ostree --repo=/upos/ostree/repo commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
+
+## upgrade deployment
+## remote boot files to avoid failing the upgrade (because it triggers ostree grub
+## hooks which don't work in the build environment
+rm -rf /upos/boot/grub*
+ostree --sysroot=/upos --os=pine admin upgrade
+## cleanup previous deployments
+ostree admin cleanup --sysroot=/upos
+## prune older commits
+ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="3 months ago"
+
+## recreate boot files
+dpl=`ls -dt /upos/ostree/deploy/pine/deploy/* | grep -E "\.[0-9]$" | head -1`
+mount --bind $dpl $dpl
+mount --bind /upos $dpl/sysroot
+mount --move $dpl /upos
+mount /dev/loop${lon}p1 /upos/boot
+mount /dev/loop${lon}p1 /upos/sysroot/boot
+
+mount --bind /dev/ /upos/dev
+mount --bind /sys  /upos/sys
+mount --bind /proc /upos/proc
+
+grub-install /dev/loop${lon} --root-directory=/upos
+ln -sr /upos/boot/{grub,grub2}
+loader=`ls -t /upos/boot/ | grep -E "loader\.[0-9]$" | head -1`
+chroot /upos grub-mkconfig -o /boot/${loader}/grub.cfg
+cd /upos/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
+
+## then generate the delta and archive it
+ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev}
+cd ${h}
+tar cf delta.tar $rev
+
+## wrap up image
+sync
+while `mountpoint -q /upos || cat /proc/mounts | grep loop${lon}` ; do
+        findmnt /upos -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
+        cat /proc/mounts | grep loop${lon} | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
+        sleep 1
+done
+xfs_repair /dev/loop${lon}p1
+xfs_repair /dev/loop${lon}p3
+losetup -d /dev/loop/${lon} &>/dev/null
+mv imgtmp/image.pine ./
+
+## checksum and compress
+sha256sum image.pine > image.pine.sum
+tar cvzf image.pine.tgz image.pine image.pine.sum

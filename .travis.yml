@@ -8,8 +8,6 @@ before_script:
 - docker run --privileged --cap-add=ALL -v $PWD:/host ubuntu /host/beegfs.pine
 script:
 - docker exec pinect ./run.pine
-before_deploy:
-- docker exec pinect ./delta.pine
 deploy:
   provider: releases
   api_key:
