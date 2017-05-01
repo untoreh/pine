@@ -55,6 +55,7 @@ ln -s sysroot/tmp tmp
 
 ## save the new version number
 echo -n "$newV" >etc/pine
+chmod 444 etc/pine
 
 mkdir -p etc/init.d
 cat << 'EOF' >etc/init.d/vardirs
