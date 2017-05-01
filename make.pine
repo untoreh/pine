@@ -334,7 +334,7 @@ rm tmpboot -rf
 KVER=$(cat usr/share/kernel/virtgrsec/kernel.release)
 mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
 cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
-chpwd depmod
+chpwd depmod $KVER
 
 ## FIXES
 rm -rf lib/rc/cache
