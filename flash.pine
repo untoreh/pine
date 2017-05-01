@@ -76,7 +76,7 @@ echo $img_url
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
 ## setup networking devices and drives
-#wget -qO- $img_url | tar xz -O | dd of=$DEVICE bs=512 conv=notrunc,fsync
+#wget -qO- $img_url | tar xzf -O image.pine | dd of=$DEVICE bs=512 conv=notrunc,fsync
 
 ## download and extract the image
 wget -qO- $img_url | tar xz
