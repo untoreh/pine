@@ -9,10 +9,10 @@ printc "preparing..."
 printc "initializing the repo..."
 ./repo.pine
 
-## build the tree 
+## the tree of files
 printc "growing the tree..."
 ./make.pine
 
-## build image
+## update image from github
 printc "building image..."
-./build.pine
+./build-update.pine
