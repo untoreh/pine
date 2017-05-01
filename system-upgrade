@@ -24,6 +24,8 @@ rc-update show default | grep clearlock && echo
 wrap_up() {
     ## cleanup tmp folder
     rm -rf $work
+    ## prune ostree
+    ostree prune --refs-only --keep-younger-than="1 months ago"
     ## finish
     if [ $upg ]; then
         echo -e "$curV updated to:\n$lasV -- $cmt\n@ $(date)\nrebooting..."
