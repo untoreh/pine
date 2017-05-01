@@ -3,8 +3,13 @@
 source functions.pine
 
 ## get previous release
-# prevV=`pine_version` ## remotely
-prevV=`git tag --sort=committerdate | tail -1` ## locally
+## prevV=`pine_version` ## this does not account for gh releases same as "git tag"
+prevV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
+ grep image.pine | awk '/browser_download_url/ { print $2 }' | head -1 \
+| sed -r 's~.*/download/(.*)/.*~\1~'`
+## if fetching locally should get the second entry because the first is the current
+## travis build
+# prevV=`git tag --sort=committerdate | tail -1`
 
 ## prev date
 prevD=`echo $prevV | cut -d- -f1`
@@ -328,6 +333,7 @@ rm tmpboot -rf
 KVER=$(cat usr/share/kernel/virtgrsec/kernel.release)
 mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
 cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
+chpwd depmod
 
 ## FIXES
 rm -rf lib/rc/cache

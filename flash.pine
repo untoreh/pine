@@ -65,6 +65,8 @@ mount --bind /dev dev
 mount --bind /sys sys
 mount --bind /proc proc
 cat << 'CEOF' >customize.pine
+#!/bin/bash
+
 ## pass device name
 DEVICE=$1
 
@@ -121,8 +123,7 @@ fi
 ## the "/share" device is mounted by the sharing service (docker or the chosen DFS)
 sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $DEVICE)'\2#' -i ${dpl}/etc/fstab
 if [ -z "$PARTS" ] ; then
-    PARTS=5G,256M
-    DP_F=true
+    export PARTS=5G,256M DP_F=true
     ## note the number 5, the partition number, extended is 4, var is 5
     var_line="${DEVICE}5    /var    xfs rw,noatime,nodiratime,largeio,inode64,nobarrier 0   0"
     sed -r 's~/ostree.*/var.*/var.*~'"${var_line}"'~' -i ${dpl}/etc/fstab
@@ -159,6 +160,7 @@ part_str=$part_str'w\n'
 echo -e $part_str | fdisk $DEVICE
 partx -u ${DEVICE}
 while [ ! -e ${DEVICE}4 ] ; do sleep 1; done
+sleep 1
 if [ "$DP_F" ] ; then
     mkfs.xfs -f -L /var -d agcount=8 -i size=1024 ${DEVICE}5
     mkfs.xfs -f -L /share -d agcount=8 -l logdev=${DEVICE}6,size=65536b -i size=1024 ${DEVICE}7
