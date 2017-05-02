@@ -2,12 +2,12 @@
 
 source functions.pine
 
-## get previous release
-prevV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
+## get release tag
+newV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
  awk '/tag_name/ { print $2 }' | head -1 | sed -r 's/",?//g'`
-## prevV=`pine_version` ## this does not account for gh releases same as "git tag"
+## newV=`pine_version` ## this does not account for gh releases same as "git tag"
 ## local tag checks
-# prevV=`git tag --sort=committerdate | tail -1`
+# newV=`git tag --sort=committerdate | tail -1`
 
 printc "$newV is the new version"
 

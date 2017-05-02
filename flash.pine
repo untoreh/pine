@@ -92,7 +92,7 @@ done
 mkdir rootfs
 mount -t xfs -o nouuid /dev/loop0p3 rootfs/
 
-dpl=`find rootfs/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
+dpl=`ls -dt rootfs/ostree/deploy/pine/deploy/* | grep -E "\.[0-9]$" | head -1`
 ## setup network
 if [ -f "./interfaces" -a -z "$IFACE" ]; then
     awk '!seen[$0]++' ./interfaces > interfaces.cleaned
@@ -158,13 +158,22 @@ fi
 part_str=$part_str'w\n'
 ## execute fdisk
 echo -e $part_str | fdisk $DEVICE
-partx -u ${DEVICE}
-while [ ! -e ${DEVICE}4 ] ; do sleep 1; done
 sleep 1
+## loop the target device to make sure partition tables are updated
+lon=0
+while [ -z "`losetup -P /dev/loop$lon $DEVICE && echo true`" ] ; do
+    lon=$((lon+1))
+    sleep 1
+done
+## LDEV is the loop device prefix to which the partition number will be appended
+LDEV=/dev/loop${lon}p
+## add extra partitions
 if [ "$DP_F" ] ; then
-    mkfs.xfs -f -L /var -d agcount=8 -i size=1024 ${DEVICE}5
-    mkfs.xfs -f -L /share -d agcount=8 -l logdev=${DEVICE}6,size=65536b -i size=1024 ${DEVICE}7
+    mkfs.xfs -f -L /var -d agcount=8 -i size=1024 ${LDEV}5
+    mkfs.xfs -f -L /share -d agcount=8 -l logdev=${LDEV}6,size=65536b -i size=1024 ${LDEV}7
 fi
+## detach loop devices
+losetup -D
 
 ## reboot
 sync
