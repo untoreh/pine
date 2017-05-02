@@ -41,7 +41,7 @@ ln -s sysroot/tmp tmp
 
 ## save the new version number
 echo -n "$newV" >etc/pine
-chmod 444 etc/pine
+# chmod 644 etc/pine ## ? readonly does not seem to work
 
 mkdir -p etc/init.d
 cat << 'EOF' >etc/init.d/vardirs
