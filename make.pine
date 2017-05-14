@@ -56,7 +56,7 @@ depend()
 
 start() {
 	ebegin "Setting dirs"
-	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/mnt /var/opt /var/srv /var/roothome /sysroot/ostree /sysroot/tmp
+	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/tmp /var/mnt /var/opt /var/srv /var/roothome /sysroot/ostree /sysroot/tmp
 	ln -srnf /sysroot/home /var/home &>/dev/null
 	eend $?
 }
@@ -153,7 +153,7 @@ echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 
 ## fstab
 cat << EOF >etc/fstab
-/dev/bd3                 /              xfs    rw,noatime,nodiratime,largeio,inode64,nobarrier     0  0
+/dev/bd3                 /              xfs    rw,noatime,largeio,inode64                          0  0
 /dev/bd1                 /boot          xfs    rw,noexec,nodev,noatime,nodiratime,largeio,inode64  0  0
 /dev/bd2                 swap           swap   defaults                                            0  0
 /boot                    /sysroot/boot  none   bind                                                0  0
@@ -287,6 +287,9 @@ chpwd setup-hostname $hostname
 chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 chpwd setup-ntp -c busybox
+
+## DROPBEAR OPTIONS
+mkdir -p /root/.ssh /home/pine/.ssh
 
 ## SERVICES
 for r in `cat ../runlevels.pine`; do

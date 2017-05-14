@@ -86,3 +86,9 @@ else
 fi
 EOF
 chmod +x usr/bin/sup
+## ssh wrapper to load environment vars which dropbear does not support
+cat << 'EOF' >usr/bin/shex
+#!/bin/sh -l
+eval "$SSH_ORIGINAL_COMMAND"
+EOF
+chmod +x usr/bin/ssheval
