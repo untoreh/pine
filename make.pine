@@ -56,7 +56,7 @@ depend()
 
 start() {
 	ebegin "Setting dirs"
-	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/mnt /var/opt /var/srv /var/roothome /sysroot/ostree /sysroot/tmp
+	mkdir -m 0755 -p /var/cache/rc /var/cache/apk /var/tmp /var/mnt /var/opt /var/srv /var/roothome /sysroot/ostree /sysroot/tmp
 	ln -srnf /sysroot/home /var/home &>/dev/null
 	eend $?
 }
@@ -165,7 +165,7 @@ echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 
 ## fstab
 cat << EOF >etc/fstab
-/dev/bd3                 /              xfs    rw,noatime,nodiratime,largeio,inode64,nobarrier     0  0
+/dev/bd3                 /              xfs    rw,noatime,largeio,inode64                          0  0
 /dev/bd1                 /boot          xfs    rw,noexec,nodev,noatime,nodiratime,largeio,inode64  0  0
 /dev/bd2                 swap           swap   defaults                                            0  0
 /boot                    /sysroot/boot  none   bind                                                0  0
@@ -247,22 +247,42 @@ net.core.rmem_max=1677721600
 net.core.rmem_default=167772160
 net.core.wmem_max=1677721600
 net.core.wmem_default=167772160
-net.core.netdev_max_backlog=30000
+net.core.netdev_max_backlog=65536
 net.core.somaxconn=16384
 net.core.optmem_max=2048000
+
 net.ipv4.tcp_mem=1024000 8738000 1677721600
 net.ipv4.tcp_rmem=1024000 8738000 1677721600
 net.ipv4.tcp_wmem=1024000 8738000 1677721600
 net.ipv4.udp_mem=1024000 8738000 1677721600
+
 net.ipv4.tcp_congestion_control=htcp
 net.ipv4.tcp_window_scaling=1
-net.ipv4.tcp_sack=0
-net.ipv4.tcp_dsack=0
+net.ipv4.tcp_sack=1
+net.ipv4.tcp_dsack=1
+net.ipv4.tcp_fack=1
+
 net.ipv4.tcp_timestamps=0
+net.ipv4.tcp_no_metrics_save=1
 net.ipv4.tcp_early_retrans=1
 net.ipv4.tcp_app_win=40
 net.ipv4.tcp_syncookies=1
-net.ipv4.tcp_no_metrics_save=1
+
+net.ipv4.tcp_max_syn_backlog=65536
+net.ipv4.tcp_synack_retries=3
+net.ipv4.tcp_retries2=6
+net.ipv4.tcp_fin_timeout=30
+net.ipv4.tcp_keepalive_time=30
+net.ipv4.tcp_keepalive_probes=4
+net.ipv4.tcp_keepalive_intvl=20
+net.ipv4.tcp_tw_recycle=1
+net.ipv4.tcp_tw_reuse=1
+
+kernel.msgmni=2878
+kernel.msgmnb=65536
+kernel.msgmax=65536
+kernel.sem=256 32000 100 142
+kernel.shmmni=4096
 EOF
 mkdir -p etc/security/limits.d
 <<<<<<< HEAD
@@ -335,7 +355,7 @@ apkc --update-cache alpine-base sudo tzdata  \
  util-linux binutils coreutils blkid multipath-tools  \
  ca-certificates wget ethtool iptables  \
  ostree git  \
- htop iftop sysstat mosh-server tmux dropbear-ssh dropbear-scp
+ htop iftop bash sysstat mosh-server tmux dropbear-ssh dropbear-scp
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
@@ -356,6 +376,9 @@ chpwd setup-hostname $hostname
 chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 chpwd setup-ntp -c busybox
+
+## DROPBEAR OPTIONS
+mkdir -p /root/.ssh /home/pine/.ssh
 
 ## SERVICES
 for r in `cat ../runlevels.pine`; do
@@ -420,4 +443,5 @@ rm sbin -rf && ln -s usr/sbin sbin
 cd /srv
 ostree --repo=pine commit -s $(date)'-build' -b trunk --tree=dir=tree
 ostree summary -u --repo=pine
+ostree --repo=pine ls trunk -Cd | awk '{print $5}' > pine.sum
 #pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d

@@ -14,7 +14,7 @@ Environment variables can be used:
 - `PARTS` comma separated list of partition sizes, eg `2G,256M` 
 
 if partitions are specified no filesystems are created on them, otherwise a default
-configuration of `5G,256M`
+configuration of `5G,128M`
 
 ### Server
 `serve` re-sets up a tz2 ostree repo from built image and 

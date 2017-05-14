@@ -72,12 +72,15 @@ chmod +x sbin/reboot
 ## - the sup command is wrapped to use a default Supfile script located in etc/Supfile
 ## for common utilities like bootstrapping an etcd cluster
 mkdir /go
-export GOPATH=/go
+export GOPATH=/go GOROOT=/usr/lib/go
 go get -u github.com/pressly/sup/cmd/sup
 mv /go/bin/sup usr/bin/sup.bin
 cp ../Supfile etc/
+## touch hosts files to not let sup fail on local hostsless execution
+touch etc/cluster etc/leaders etc/workers
 cat << 'EOF' >usr/bin/sup
-#!/bin/sh
+#!/bin/bash -l
+export -f `declare -F | awk '{print $3}'`
 SUP_FILE=/etc/Supfile
 if $(echo "$@" | grep -qE "\-f\s+[^\s]+\s*") ; then
     exec /usr/bin/sup.bin -e SUP_FILE=$SUP_FILE $@
@@ -86,3 +89,54 @@ else
 fi
 EOF
 chmod +x usr/bin/sup
+## ssh wrapper to load environment vars which dropbear does not support
+cat << 'EOF' >usr/bin/ssheval
+#!/bin/sh -l
+eval "$SSH_ORIGINAL_COMMAND"
+EOF
+chmod +x usr/bin/ssheval
+
+## some utility shell functions
+cp ../func.sh etc/profile.d/func.sh
+
+## OSTree
+cat << 'EOF' > usr/bin/trees
+#!/bin/bash -l
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -b|--base)
+            base="$2"
+            shift
+            ;;
+        -n|--name)
+            name="$2"
+            shift
+            ;;
+        -f|--force)
+            clob=1
+            shift
+            ;;
+        *)
+            name=$key
+            ;;
+    esac
+    shift
+done
+
+repo=untoreh/$base
+appsrepo=untoreh/trees
+ostrepo=/var/lib/apps/repo
+workdir=/var/tmp/sup/${name}
+mkdir -p $workdir \
+    && cd $workdir \
+    && [ -n "$clob" ] && rm -f $workdir/*
+fetch_artifact $appsrepo ${name}.tar $workdir
+rev=$(b64name $workdir)
+[ -z "$rev" ] && echo "error: app not found..." && exit 1
+applied=$(ostree --repo=$ostrepo static-delta apply-offline $rev && echo true || echo false)
+[ ! $applied ] && echo "error: troubles applying the delta..." && exit 1
+ostree --repo=$ostrepo refs --create=$name $rev
+ostree --repo=$ostrepo checkout -H $name $ostrepo/$name
+EOF

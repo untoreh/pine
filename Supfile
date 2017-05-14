@@ -1,10 +1,22 @@
 # Supfile
 version: 0.4
 
+## variables can't have names that start exactly like a network name
 env:
   NETWORK: woods
+  XFS_OPTS: rw,noatime,nodiratime,largeio,inode64,nobarrier,logbufs=8,logbsize=256k
+  cluslist: /etc/cluster
+  leadlist: /etc/leaders
+  worklist: /etc/workers
+  inventories: $cluslist $leadlist $worklist
+  pinerepo: untoreh/pine
+  trubrepo: untoreh/trub
+  trubartifact: /trub.tar
 
 networks:
+  local:
+    hosts:
+      - localhost
   cluster:
     inventory: cat /etc/cluster
   leaders:
@@ -12,12 +24,82 @@ networks:
   workers:
     inventory: cat /etc/workers
 
+## The "check" commands use the SUP_NETWORK_CHECK passed variable and not SUP_NETWORK directly
+## because they are executed on the "local" network which bypasses ssh, so SUP_NETWORK would print "local"
 commands:
+  poke:
+    run: echo boop
+  whatnode:
+    run: echo $NODE
+  network-local-check:
+    desc: assert the current network is local
+    run: |
+      [ "$SUP_NETWORK_CHECK" != local ] && echo "not local network, terminating." && exit 1 || true
+  network-leader-check:
+    desc: assert the current node is part of the leaders network
+    local: |
+      [ "$SUP_NETWORK_CHECK" != leaders ] && echo "not leaders network, terminating." && exit 1 || true
+  network-worker-check:
+    desc: assert the current node is part of the workers network
+    local: |
+      [ "$SUP_NETWORK_CHECK" != workers ] && echo "not workers network, terminating." && exit 1 || true
+  node-id-check:
+    desc: NODE env var check
+    run: |
+      [ -z "$NODE" ] && echo "NODE id missing, set in /etc/network-environment" && exit 1 || true
+    once: true
   docker-leader-check:
-    desc: assert the current node is a leader
+    desc: assert the current node is a docker leader
     local: |
       [ $(docker node ls -q | wc -l) -lt 1 ] && echo "please run from a leader node." && exit 1 || true
     once: true
+  ssh-checks:
+    desc: ssh bootstrapping sanity checks
+    local: |
+      [ -z "$PORT" ] && echo "PORT is empty." && exit 1 || true
+  ssh-clear-key:
+    desc: clear local keys, for bootstrapping
+    local: |
+      rm -f ~/.ssh/{authorized_keys,id_rsa,id_dropbear}
+  ssh-pub-key:
+    desc: generate ssh key
+    local: |
+      [ -f ~/.ssh/id_dropbear -o -f ~/.ssh/id_rsa ] && echo "ppk files present...terminating." && exit 1
+      dropbearkey -t rsa -f ~/.ssh/id_dropbear &>/dev/null
+      echo 'command="/usr/bin/ssheval" '$(\
+      dropbearkey -y -f ~/.ssh/id_dropbear | grep "^ssh-rsa ") >> ~/.ssh/authorized_keys
+      which dropbearconvert 1>/dev/null || ( ostree admin unlock && apk add --no-cache dropbear-convert 2>/dev/null )
+      dropbearconvert dropbear openssh ~/.ssh/id_dropbear ~/.ssh/id_rsa
+      echo "the pub key is:"
+      cat ~/.ssh/authorized_keys | tail -1
+  ssh-dist-key:
+    desc: distribute pub key to each worker node, cause upload task does not support keyless auths...
+    local: |
+      SUP_NETWORK_CHECK=$SUP_NETWORK
+      sup local $SUP_ENV network-local-check
+      DROPBEAR_PASSWORD=${rootppp:-$DROPBEAR_PASSWORD}
+      for w in $(cat $worklist) ; do
+        w=$(echo "$w" | sed -r 's/:[0-9]+$//' )
+        scp ~/.ssh/authorized_keys $w:$HOME/.ssh/
+      done
+  ssh-dropbear-config:
+    desc: dropbear daemon args
+    run: |
+      sed -r 's/(DROPBEAR_OPTS=).*/\1"-s -p '$PORT'"/' -i /etc/conf.d/dropbear;
+      /sbin/rc-service dropbear restart
+  ssh-hosts-port:
+    desc: changes the ssh port of a list of networks (files) and restart dropbear
+    local: |
+
+      for inv in $inventories; do
+        sed -r 's/(:([1-9]|[1-8][0-9]|9[0-9]|[1-8][0-9]{2}|9[0-8][0-9]|99[0-9]|\
+        [1-8][0-9]{3}|9[0-8][0-9]{2}|99[0-8][0-9]|999[0-9]|[1-5][0-9]{4}|\
+        6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$)|:$|$/:'$PORT'/' -i $inv
+      done
+  ssh-wrap:
+    desc: disable root pass logins and changes ssh port on dropbear
+    run: |
+      sup -f $SUP_FILE -e PORT=$PORT $SUP_ENV cluster ssh-dropbear-config
   etcd-docker-service-create:
     desc: bootstrap a 3 hosts etcd cluster under docker
     local: |
@@ -35,7 +117,7 @@ commands:
       --mount type=bind,source=/etc/network-environment,destination=/etc/network-environment \
       --mount type=bind,source=/srv/etcd,destination=/etcd \
       --network $NETWORK \
-      --name etcd quay.io/untoreh/containers:etcd \
+      --name etcd untoreh/containers:etcd \
       /etcd/entry
     once: true
   etcd-docker-network-prune:
@@ -68,7 +150,7 @@ commands:
     run: |
       mkdir -p /srv/etcd
       cat <<'EOF' > /srv/etcd/entry
-      #!/bin/sh -x
+      #!/bin/sh
 
       source /etc/network-environment
 
@@ -96,9 +178,10 @@ commands:
   swarm-init:
     desc: the first command to initialize the swarm on the leader, for network leaders
     run: |
-      [ "$SUP_NETWORK" != leaders ] && echo "not leaders network, terminating." && exit 1
+      sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-leader-check
       mkdir -p /tmp/swarm-init
-      docker swarm init --advertise-addr=$SUP_HOST | grep -Eo '.*\\$' -A 1 > /tmp/swarm-init/cmd
+      IP=$(echo "$SUP_HOST" | sed -r 's/:[0-9]+$//')
+      docker swarm init --advertise-addr=$IP | grep -Eo '.*\\$' -A 1 > /tmp/swarm-init/cmd
       sup -f $SUP_FILE $SUP_ENV workers swarm-upload-join
       sup -f $SUP_FILE $SUP_ENV workers swarm-join-node
     once: true
@@ -110,22 +193,133 @@ commands:
   swarm-join-node:
     desc: unwrap the docker command to join nodes to the swarm
     run: |
-      [ "$SUP_NETWORK" != workers ] && echo "not workers network, terminating." && exit 1
+      sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-worker-check
       chmod +x /tmp/swarm-init/cmd
       /bin/sh /tmp/swarm-init/cmd
   swarm-disband:
     desc: disjoin a docker swarm
     run: |
-      [ "$SUP_NETWORK" != leaders ] && echo "not leaders network, terminating." && exit 1
+      sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-leader-check
       sup -f $SUP_FILE $SUP_ENV workers swarm-worker-leave
       docker node ls -f role=worker -q | xargs -I {} docker node update {}
       docker swarm leave -f
   swarm-worker-leave:
     run: |
-      [ "$SUP_NETWORK" != workers ] && echo "not workers network, terminating." && exit 1
+      sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-worker-check
       docker swarm leave
+  beegfs-leader-setup:
+    desc: |
+      docker node engine labels are required to be present for beegfs setup to work.
+      Leader hosts mgmtd and meta services ftm.
+      "originalNodeID" file must be removed cause containers.
+    local: |
+      sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-leader-check
+      mkdir -p /srv/beegfs/etc
+      [ "$(ls -A /srv/beegfs/beegfs_mgmtd/* /srv/beegfs/beegfs_meta/* 2>/dev/null)" ] && \
+      echo "config folders in /srv/beegfs/ must be empty." && exit 1
+      docker stop beegfs-config -t1 ; docker rm beegfs-config
+      docker run -d --name beegfs-config -v /srv/beegfs:/beegfs untoreh/containers:beegfs sleep -- 3600
+      ## mgmtd
+      docker exec beegfs-config /opt/beegfs/sbin/beegfs-setup-mgmtd -p /beegfs/beegfs_mgmtd
+      docker exec beegfs-config cp -a /etc/beegfs/beegfs-mgmtd.conf /beegfs/etc
+      ## meta
+      docker exec beegfs-config /opt/beegfs/sbin/beegfs-setup-meta -p /beegfs/beegfs_meta -s $NODE -m beegfs-mgmtd
+      docker exec beegfs-config cp -a /etc/beegfs/beegfs-meta.conf /beegfs/etc
+      docker stop beegfs-config -t1 ; docker rm beegfs-config
+
+      ## mgmtd service
+      docker service create --name beegfs-mgmtd \
+      --constraint "engine.labels.NODE == $NODE" \
+      --mount type=bind,src=/srv/beegfs,dst=/beegfs \
+      --network $NETWORK \
+      untoreh/containers:beegfs /bin/sh -c \
+      "rm /beegfs/beegfs_mgmtd/originalNodeID; \
+      exec /opt/beegfs/sbin/beegfs-mgmtd cfgFile=/beegfs/etc/beegfs-mgmtd.conf"
+
+      ## meta service
+      docker service create --name beegfs-meta \
+      --constraint "engine.labels.NODE == $NODE" \
+      --mount type=bind,src=/srv/beegfs,dst=/beegfs \
+      --network $NETWORK \
+      untoreh/containers:beegfs /bin/sh -c \
+      "rm /beegfs/beegfs_meta/originalNodeID; \
+      exec /opt/beegfs/sbin/beegfs-meta cfgFile=/beegfs/etc/beegfs-meta.conf"
+  beegfs-defparts:
+    desc: checks if default partition sizes are present
+    local: |
+      dev=$(cat /etc/fstab | awk '/ \/ /{gsub(/[0-9]*/,"");print$1}') ## root partition to find main block device
+      [ "`lsblk ${dev}5 -rno SIZE`" = 5G ] && \
+      [ "`lsblk ${dev}6 ${dev}7 -rno SIZE | uniq`" = 128M ] && \
+      [ "`lsblk ${dev}5 ${dev}8 -f -rno FSTYPE | uniq`" = xfs ] || \
+      ( echo "partitions are not defaults." && exit 1 )
+  beegfs-storage-worker-setup:
+    desc: configures a storage instance
+    run: |
+      mkdir -p /srv/beegfs/etc
+
+      ## [ "$(ls -A /srv/beegfs/beegfs_storage/* 2>/dev/null)" ] &&
+      ## echo "storage folder in /srv/beegfs/ must be empty." && exit 1
+      ## check partitions mounts
+      ## sup -f $SUP_FILE $SUP_NETWORK beegfs-defparts
+      ## partitions are defaults so mount the last one (7) which will be the storage mount
+
+      ## sn=$(find /srv/beegfs/beegfs_storage* &>/dev/null | wc -l) ## this would require worker-leader comm
+      SN=${SN:-0}
+      ## dev=$(cat /etc/fstab | awk '/ \/ /{gsub(/[0-9]*/,"");print$1}') ## root partition to find main block device
+      ## echo "${dev}8 /srv/beegfs/beegfs_storage${SN} xfs \
+      ## rw,noatime,nodiratime,largeio,inode64,nobarrier,\
+      ## logbufs=8,logbsize=256k,logdev=${dev}7 0 0" >> /etc/fstab && mount -a
+
+      docker stop beegfs-config -t1 2>/dev/null ; docker rm beegfs-config 2>/dev/null
+      docker run -d --name beegfs-config -v /srv/beegfs:/beegfs untoreh/containers:beegfs sleep -- 3600
+      docker exec beegfs-config /opt/beegfs/sbin/beegfs-setup-storage -p /beegfs/beegfs_storage${SN} -s $NODE -i ${NODE}${sn} -m beegfs-mgmtd
+      docker exec beegfs-config cp -a /etc/beegfs/beegfs-storage.conf /beegfs/etc
+      docker stop beegfs-config -t1 2>/dev/null ; docker rm beegfs-config 2>/dev/null
+  beegfs-storage-service-setup:
+    desc: create docker services from leader node
+    local: |
+      sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-leader-check
+      ## one node id per line
+      NODES_LIST=$(docker inspect `docker node ls -q` | \
+      awk '/Engine/{flag=1}/Plugins/{flag=0}; flag == 1 && match($0, /NODE/){gsub(/"/,"",$2);print$2}')
+      SN=${SN:-0}
+      for N in $NODES_LIST ; do
+        ## docker service
+        docker service create --name beegfs-storage${N}-${SN} \
+        --constraint "engine.labels.NODE == $N" \
+        --mount type=bind,src=/srv/beegfs,dst=/beegfs \
+        --network $NETWORK \
+        untoreh/containers:beegfs /bin/sh -c \
+        "rm /beegfs/beegfs_storage${SN}/originalNodeID; \
+        exec /opt/beegfs/sbin/beegfs-storage cfgFile=/beegfs/etc/beegfs-storage.conf"
+      done
+  ostree-apps:
+    desc: mount an overlay over ostree to install packages based on ostree
+    run: |
+      mkdir -p /var/lib/apps ; cd /var/lib/apps ; mkdir -p work upper repo
+      mountpoint -q repo && umount repo
+      mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none repo
+  ostree-trub:
+    desc: fetch trub base delta
+    run: |
+      ostree="ostree --repo=/var/lib/apps/repo"
+      trubdir="/var/tmp/sup/trub"
+      mkdir -p $trubdir && cd $trubdir
+      fetch_artifact $trubrepo $trubartifact $trubdir
+      rev=$(b64name $trubdir)
+      $ostree static-delta apply-offline $rev
+      $ostree refs --delete trub
+      $ostree refs --create=trub $rev
+      rm -rf $trubdir/*
 
 targets:
+  ssh-bootstrap:
+    - network-local-check
+    - ssh-checks
+    - ssh-pub-key
+    - ssh-dist-key
+    - ssh-wrap
+    - ssh-hosts-port
   etcd-bootstrap:
     - docker-leader-check
     - etcd-discovery-fetch
@@ -137,3 +331,5 @@ targets:
   swarm-clear:
     - docker-leader-check
     - swarm-disband
+  beegfs-bootstrap:
+    - node-id-check

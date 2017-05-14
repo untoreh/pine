@@ -30,25 +30,12 @@ http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
-tools="ostree util-linux wget"
-setup=false
-for t in $tools ; do
-    if [ -z "`apk info -e $t`" ] ; then
-        setup=true
-        toinst="$toinst $t"
-    fi
-done
-$setup && apk add --no-cache $toinst
-
-img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
-echo $img_url
+install_tools ostree util-linux wget
 
 h=$PWD
 mkdir -p imgtmp
 cd imgtmp
-if [ ! -f image.pine ] ; then
-    wget -qO- $img_url | tar xzf - image.pine
-fi
+fetch_artifact untoreh/pine image.pine.tgz $PWD
 
 lon=0
 while [ -z "`losetup -P /dev/loop$lon $PWD/image.pine && echo true`" ] ; do
@@ -66,6 +53,11 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
 rev=$(ostree --repo=/upos/ostree/repo commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
+
+## compare checksums
+old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
+new_csum=$(ostree --repo=/upos/ostree/repo ls trunk -Cd | awk '{print $5}')
+compare_csums
 
 ## upgrade deployment
 ## remote boot files to avoid failing the upgrade (because it triggers ostree grub
@@ -113,5 +105,6 @@ losetup -d /dev/loop/${lon} &>/dev/null
 mv imgtmp/image.pine ./
 
 ## checksum and compress
-sha256sum image.pine > image.pine.sum
+sha256sum image.pine >image.pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
+echo $new_csum >pine.sum

@@ -7,3 +7,6 @@ tree/
 pine/
 imgtmp/
 repo/
+.idea/
+*.iml
+.vscode/
