@@ -15,6 +15,7 @@ deploy:
   file:
     - "image.pine.tgz"
     - "delta.tar"
+    - "pine.sum"
   skip_cleanup: true
   on:
     tags: true

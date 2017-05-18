@@ -51,7 +51,7 @@ mkdir -p /upos/boot
 mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
 ## compare checksums
-old_csum=$(fetch_artifact untoreh/pine /image.pine.sum -)
+old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
 new_csum=$(ostree checksum ${h}/tree)
 compare_csums
 
@@ -105,5 +105,6 @@ losetup -d /dev/loop/${lon} &>/dev/null
 mv imgtmp/image.pine ./
 
 ## checksum and compress
-sha256sum image.pine > image.pine.sum
+sha256sum image.pine >image.pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
+echo $new_csum >pine.sum
