@@ -51,8 +51,8 @@ mkdir -p /upos/boot
 mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
 ## compare checksums
-old_csum=$(fetch_artifact $rem_repo /${csum_artifact} -)
-new_csum=$(ostree checksum ${tree})
+old_csum=$(fetch_artifact untoreh/pine /image.pine.sum -)
+new_csum=$(ostree checksum ${h}/tree)
 compare_csums
 
 ## now commit the new tree to the old repo
