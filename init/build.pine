@@ -52,4 +52,5 @@ losetup -d /dev/loop/0 &>/dev/null
 
 ## checksum and compress
 sha256sum image.pine > image.pine.sum
+ostree checksum tree/ > pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
