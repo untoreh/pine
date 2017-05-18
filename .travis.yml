@@ -7,8 +7,9 @@ before_script:
 - docker run -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge /bin/sleep 36000
 - docker run --privileged --cap-add=ALL -v $PWD:/host ubuntu /host/beegfs.pine
 script:
-- docker exec pinect ./run.pine
 - |
+
+  && docker exec pinect ./run.pine
   if [ "$TRAVIS_TAG" -a -f file.up ]; then
     GIT_REMOTE=$(git remote show origin | grep -i "push.*url" | \
       sed -r 's~.*push.*?:[ \s]+(.*?://)(.*)$~\1'$GIT_USER:$GIT_TOKEN'@\2~i')
