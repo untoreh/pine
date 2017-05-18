@@ -1,6 +1,6 @@
-install: true
 sudo: false
-language: generic
+install:
+- gem install travis
 services:
 - docker
 before_script:
@@ -8,6 +8,14 @@ before_script:
 - docker run --privileged --cap-add=ALL -v $PWD:/host ubuntu /host/beegfs.pine
 script:
 - docker exec pinect ./run.pine
+- |
+  if [ "$TRAVIS_TAG" -a -f file.up ]; then
+    GIT_REMOTE=$(git remote show origin | grep -i "push.*url" | \
+      sed -r 's~.*push.*?:[ \s]+(.*?://)(.*)$~\1'$GIT_USER:$GIT_TOKEN'@\2~i')
+    git tag -d $TRAVIS_TAG
+    git push --delete $GIT_REMOTE $TRAVIS_TAG
+    travis cancel $TRAVIS_BUILD_NUMBER --no-interactive -t $TRAVIS_TOKEN
+  fi
 deploy:
   provider: releases
   api_key:
