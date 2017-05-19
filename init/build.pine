@@ -56,3 +56,5 @@ ostree checksum tree/ > pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
 ## since building from scratch does not have a delta, we touch the file to make travis happy
 touch delta.tar
+printc "list of files.."
+ls
