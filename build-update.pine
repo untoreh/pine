@@ -50,14 +50,14 @@ mount -o nouuid /dev/loop${lon}p3 /upos
 mkdir -p /upos/boot
 mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
-## compare checksums
-old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
-new_csum=$(ostree checksum ${h}/tree)
-compare_csums
-
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
 rev=$(ostree --repo=/upos/ostree/repo commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
+
+## compare checksums
+old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
+new_csum=$(ostree --repo=/upos/ostree/repo ls trunk -Cd | awk '{print $5}')
+compare_csums
 
 ## upgrade deployment
 ## remote boot files to avoid failing the upgrade (because it triggers ostree grub
