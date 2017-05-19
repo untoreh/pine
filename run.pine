@@ -15,6 +15,7 @@ printc "growing the tree..."
 
 ## update image from github
 printc "building image..."
+printc $TRAVIS_COMMIT_MESSAGE
 ( [ ! $(echo "$TRAVIS_COMMIT_MESSAGE" | grep "scratch-build") ]  \
     && ./build-update.pine ) \
     || ( ./init/build.pine && ./init/delta.pine )
