@@ -55,5 +55,4 @@ sha256sum image.pine > image.pine.sum
 ostree checksum tree/ > pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
-tar cfz foo.tgz -T -
 echo 1>dummy && tar cvf delta.tar dummy && rm dummy
