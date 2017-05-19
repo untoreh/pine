@@ -354,4 +354,5 @@ rm sbin -rf && ln -s usr/sbin sbin
 cd /srv
 ostree --repo=pine commit -s $(date)'-build' -b trunk --tree=dir=tree
 ostree summary -u --repo=pine
+ostree --repo=pine ls trunk -Cd | awk '{print $5}' > pine.sum
 #pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d

@@ -52,7 +52,6 @@ losetup -d /dev/loop/0 &>/dev/null
 
 ## checksum and compress
 sha256sum image.pine > image.pine.sum
-ostree --repo=/os/ostree/repo ls trunk -Cd | awk '{print $5}' > pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
 echo 1>dummy && tar cvf delta.tar dummy && rm dummy
