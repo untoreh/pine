@@ -37,9 +37,9 @@ fetch_artifact() {
     else
         mkdir -p $3
         if [ $(echo "$2" | grep -E "gz|tgz|zip|xz|7z") ]; then
-            wget $art_url -qO- | tar xz -C $3
+            wget $art_url -qO- | tar xzf - -C $3
         else
-            wget $art_url -qO- | tar x -C $3
+            wget $art_url -qO- | tar xf - -C $3
         fi
         touch $3/$2
     fi
