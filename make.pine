@@ -266,7 +266,7 @@ apkc --update-cache alpine-base sudo tzdata  \
  util-linux binutils coreutils blkid multipath-tools  \
  ca-certificates wget ethtool iptables  \
  ostree git  \
- htop iftop sysstat mosh-server tmux dropbear-ssh dropbear-scp
+ htop iftop bash sysstat mosh-server tmux dropbear-ssh dropbear-scp
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux

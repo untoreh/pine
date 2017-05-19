@@ -9,6 +9,9 @@ env:
   leadlist: /etc/leaders
   worklist: /etc/workers
   inventories: $cluslist $leadlist $worklist
+  pinerepo: untoreh/pine
+  trubrepo: untoreh/trub
+  trubartifact: /trub.tar
 
 networks:
   local:
@@ -290,6 +293,21 @@ commands:
         "rm /beegfs/beegfs_storage${SN}/originalNodeID; \
         exec /opt/beegfs/sbin/beegfs-storage cfgFile=/beegfs/etc/beegfs-storage.conf"
       done
+  ostree-apps:
+    desc: mount an overlay over ostree to install packages based on ostree
+    run: |
+      mkdir -p /var/lib/apps
+      cd /var/lib/apps
+      mkdir -p work upper repo
+      mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none repo
+  ostree-trub:
+    desc: fetch trub base delta
+    run: |
+      mkdir -p /var/tmp/sup && cd /var/tmp/sup
+      fetch_artifact $trubrepo $trubartifact $PWD
+      rev=$(b64name $PWD)
+      ostree --repo=/var/lib/apps/repo static-delta apply-offline $rev
+
 targets:
   ssh-bootstrap:
     - network-local-check
