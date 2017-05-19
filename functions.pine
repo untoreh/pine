@@ -55,6 +55,7 @@ mount_image() {
     lon=0
     while [ -z "`losetup -P /dev/loop${lon} $(realpath ${1}) && echo true`" ]; do
         lon=$((lon + 1))
+        [ $lon -gt 10 ] && return 1
         sleep 1
     done
     ldev=/dev/loop${lon}
