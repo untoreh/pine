@@ -307,6 +307,8 @@ commands:
       fetch_artifact $trubrepo $trubartifact $PWD
       rev=$(b64name $PWD)
       ostree --repo=/var/lib/apps/repo static-delta apply-offline $rev
+      ostree refs --create=trub $rev
+      rm -rf $PWD/*
 
 targets:
   ssh-bootstrap:
