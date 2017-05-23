@@ -9,3 +9,4 @@ imgtmp/
 repo/
 .idea/
 *.iml
+.vscode/

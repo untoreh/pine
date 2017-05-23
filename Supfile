@@ -296,19 +296,21 @@ commands:
   ostree-apps:
     desc: mount an overlay over ostree to install packages based on ostree
     run: |
-      mkdir -p /var/lib/apps
-      cd /var/lib/apps
-      mkdir -p work upper repo
+      mkdir -p /var/lib/apps ; cd /var/lib/apps ; mkdir -p work upper repo
+      mountpoint -q repo && umount repo
       mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none repo
   ostree-trub:
     desc: fetch trub base delta
     run: |
-      mkdir -p /var/tmp/sup && cd /var/tmp/sup
-      fetch_artifact $trubrepo $trubartifact $PWD
-      rev=$(b64name $PWD)
-      ostree --repo=/var/lib/apps/repo static-delta apply-offline $rev
-      ostree refs --create=trub $rev
-      rm -rf $PWD/*
+      ostree="ostree --repo=/var/lib/apps/repo"
+      trubdir="/var/tmp/sup/trub"
+      mkdir -p $trubdir && cd $trubdir
+      fetch_artifact $trubrepo $trubartifact $trubdir
+      rev=$(b64name $trubdir)
+      $ostree static-delta apply-offline $rev
+      $ostree refs --delete trub
+      $ostree refs --create=trub $rev
+      rm -rf $trubdir/*
 
 targets:
   ssh-bootstrap:
