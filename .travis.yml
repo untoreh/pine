@@ -4,6 +4,8 @@ install:
 - env > build.env
 services:
 - docker
+env:
+- trees_repo=untoreh/trees tag_prefix=pine
 before_script:
 - echo $TRAVIS_COMMIT_MESSAGE
 - docker run --env-file build.env -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge /bin/sleep 36000
@@ -29,3 +31,10 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+after_deploy:
+  - |
+    ## since a build has been deployed rebuild dependend images on the /trees repo
+    source functions.sh
+    git clone --depth=1 https://$GIT_USER:$GIT_TOKEN@github.com/$trees_repo && cd $(basename $trees_repo)
+    git tag ${tag_prefix}-$(md)
+    git push --tags
