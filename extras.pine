@@ -97,7 +97,7 @@ EOF
 chmod +x usr/bin/ssheval
 
 ## some utility shell functions
-cp ../func.sh etc/profile.d/func.sh
+cp ../functions.sh etc/profile.d/func.sh
 
 ## OSTree
 cat << 'EOF' > usr/bin/trees
