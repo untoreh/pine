@@ -18,5 +18,5 @@ handle_tags() {
 	## since a build has been deployed rebuild dependend images on the /trees repo
 	git clone --depth=1 https://$GIT_USER:$GIT_TOKEN@github.com/$trees_repo && cd $(basename $trees_repo)
 	git tag ${tag_prefix}-$(md)
-	git push --tags
+	git push --tags --force
 }
