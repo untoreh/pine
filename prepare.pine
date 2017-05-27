@@ -1,9 +1,7 @@
 #!/bin/sh
 source functions.pine
 
-cat <<EOF > /etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
+cat <<EOF >> /etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
@@ -21,11 +19,9 @@ apk add --update-cache \
 	util-linux \
 	sfdisk \
 	ostree \
+	grub-bios \
 	xfsprogs \
-	go musl-dev `# for sup` \
-	
-## temporary grub command because grub is only in edge repo
-apk add -X http://dl-cdn.alpinelinux.org/alpine/edge/main -U grub-bios
+	go musl-dev
 
 source ./functions.pine
 source ./glib.pine
