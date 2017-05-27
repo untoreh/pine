@@ -3,7 +3,7 @@
 
 ## install packages from alpine to install init scripts...etc, then replace binaries
 ## with the upstream ones
-apkc docker
+apkc add docker
 
 ## DOCKER
 DOCKER_VERSION=`last_version docker/docker`
@@ -97,7 +97,7 @@ EOF
 chmod +x usr/bin/ssheval
 
 ## some utility shell functions
-cp ../functions.sh etc/profile.d/func.sh
+cp ../functions.pine etc/profile.d/func.sh
 
 ## OSTree
 cat << 'EOF' > usr/bin/trees
