@@ -6,7 +6,7 @@ cd /srv
 rm -rf /os &>/dev/null
 mkdir -p /os
 
-dd if=/dev/zero of=image.pine bs=512 count=786432
+dd if=/dev/zero of=image.pine bs=512 count=1048576
 losetup -P /dev/loop0 image.pine
 
 sfdisk /dev/loop0 < layout.pine
