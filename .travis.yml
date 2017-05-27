@@ -6,7 +6,7 @@ services:
 env:
 - trees_repo=untoreh/trees tag_prefix=pine
 before_script:
-- docker run --env-file build.env -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine:edge /bin/sleep 36000
+- docker run --env-file build.env -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine /bin/sleep 36000
 - docker run --privileged --cap-add=ALL -v $PWD:/host ubuntu /host/beegfs.pine
 script:
 - docker exec pinect ./run.pine

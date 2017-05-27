@@ -163,11 +163,7 @@ EOF
 
 ## repositories
 mkdir -p etc/apk
-cat << EOF >etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
-EOF
+cat /etc/apk/repositories >etc/apk/repositories
 
 ## nameservers
 cat << EOF >etc/resolv.conf
@@ -216,6 +212,7 @@ vm.overcommit_ratio=100
 vm.min_free_kbytes=65536
 kernel.pid_max=4194303
 fs.file-max=6544018
+fs.nr_open=6544018
 
 ## net
 net.core.rmem_max=1677721600
@@ -243,6 +240,7 @@ net.ipv4.tcp_early_retrans=1
 net.ipv4.tcp_app_win=40
 net.ipv4.tcp_syncookies=1
 
+net.ipv4.ip_local_port_range=1025 65535
 net.ipv4.tcp_max_syn_backlog=65536
 net.ipv4.tcp_synack_retries=3
 net.ipv4.tcp_retries2=6
@@ -278,17 +276,24 @@ mount --bind /proc proc
 mount --bind /dev dev
 
 apkc() {
-    apk --arch x86_64 --allow-untrusted --root $PWD --initdb add $@
+    apk --arch x86_64 --allow-untrusted --root $PWD --initdb $@
 }
 
-apkc --update-cache alpine-base sudo tzdata  \
- mkinitfs xfsprogs  \
+
+apkc add --update-cache alpine-base sudo tzdata  \
+ mkinitfs xfsprogs grub-bios \
  util-linux binutils coreutils blkid multipath-tools  \
  ca-certificates wget ethtool iptables  \
  ostree git  \
- htop iftop bash sysstat mosh-server tmux dropbear-ssh dropbear-scp
-## temporary grub command because grub is only in edge repo
-apkc -X http://dl-cdn.alpinelinux.org/alpine/edge/main -U grub-bios
+ htop iftop bash sysstat tmux dropbear-ssh dropbear-scp openssh-sftp-server
+
+## temporary fix for mosh-server
+apkc del dropbear-ssh dropbear-scp
+apkc add mosh-server
+cp -a usr/bin/mosh-server ./
+apkc del mosh-server
+apkc add dropbear-ssh dropbear-scp
+mv mosh-server usr/bin
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
@@ -328,21 +333,22 @@ source ../glib.pine $PWD
 source ../extras.pine
 
 ## BOOT
-apkc --no-scripts linux-virtgrsec
+flavor="virthardened"
+apkc add --no-scripts linux-virthardened
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
 chroot $PWD mkinitfs  \
  -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \
  $(basename `ls -d lib/modules/*`)
 mv boot tmpboot && mkdir boot
-cp -a tmpboot/vmlinuz-virtgrsec boot/
-cp -a tmpboot/initramfs-virtgrsec boot/
-cksum=`cat boot/vmlinuz-virtgrsec boot/initramfs-virtgrsec | sha256sum | cut -f 1 -d ' '`
-mv boot/vmlinuz-virtgrsec boot/vmlinuz-virtgrsec-${cksum}
-mv boot/initramfs-virtgrsec boot/initramfs-virtgrsec-${cksum}
+cp -a tmpboot/vmlinuz-virthardened boot/
+cp -a tmpboot/initramfs-virthardened boot/
+cksum=`cat boot/vmlinuz-virthardened boot/initramfs-virthardened | sha256sum | cut -f 1 -d ' '`
+mv boot/vmlinuz-virthardened boot/vmlinuz-virthardened-${cksum}
+mv boot/initramfs-virthardened boot/initramfs-virthardened-${cksum}
 rm tmpboot -rf
 
 ## KERNEL MODULES
-KVER=$(cat usr/share/kernel/virtgrsec/kernel.release)
+KVER=$(cat usr/share/kernel/virthardened/kernel.release)
 mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
 cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
 chpwd depmod $KVER
