@@ -276,11 +276,11 @@ mount --bind /proc proc
 mount --bind /dev dev
 
 apkc() {
-    apk --arch x86_64 --allow-untrusted --root $PWD --initdb $@
+    apk --arch x86_64 --allow-untrusted --root $PWD $@
 }
 
 
-apkc add --update-cache alpine-base sudo tzdata  \
+apkc add --initdb --update-cache alpine-base sudo tzdata  \
  mkinitfs xfsprogs grub-bios \
  util-linux binutils coreutils blkid multipath-tools  \
  ca-certificates wget ethtool iptables  \
