@@ -10,12 +10,18 @@ printc "initializing the repo..."
 ./repo.pine
 
 ## the tree of files
-printc "growing the tree..."
+printc "growing bare/kvm tree..."
 ./make.pine
+printc "growing ovz tree..."
+./make_ovz.pine
 
 ## update image from github
 printc "building image..."
 printc $TRAVIS_COMMIT_MESSAGE
-( [ ! $(echo "$TRAVIS_COMMIT_MESSAGE" | grep "scratch-build") ]  \
-    && ./build-update.pine ) \
-    || ./init/build.pine
+if [ $(echo "$TRAVIS_COMMIT_MESSAGE" | grep "scratch-build") ]; then
+	./init/build.pine
+    ./init/build_ovz.pine
+else
+	./build-update.pine
+	./build-update_ovz.pine
+fi

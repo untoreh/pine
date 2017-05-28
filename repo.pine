@@ -1,9 +1,15 @@
 #!/bin/bash
 source functions.pine
-
 cd /srv
-rm -rf pine tree
-mkdir -p pine tree
-ostree --repo=pine --mode=archive-z2 init
 
-ostree --repo=pine commit -s $(date)'-build' -b trunk --tree=dir=tree
+# $1 repo/tree name
+init_repo() {
+    local name=$1 ref=trunk
+    rm -rf ${name} ${name}_tree
+    mkdir -p ${name} ${name}_tree
+    ostree --repo=${name} --mode=archive-z2 init
+    ostree --repo=${name} commit -s $(date)'-build' -b $ref --tree=dir=${name}_tree
+}
+
+init_repo pine
+init_repo pine_ovz

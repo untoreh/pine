@@ -1,26 +1,27 @@
 #!/bin/bash
 source functions.pine
+name=pine
 
 ## confirm we made a new tree
-if [ ! "`find tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
+if [ ! "`find ${name}_tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
     echo "newer tree not grown. (tree folder is empty)"
     exit 1
 fi
 
 cleanup() {
-	{
-		umount loroot
-		cd -
-		losetup -d /dev/loop$lon
-	} &>/dev/null
+    {
+        umount loroot
+        cd -
+        losetup -d /dev/loop$lon
+    } &>/dev/null
 }
 
 case $1 in
-	-t )
-	trap cleanup SIGINT SIGTERM EXIT ;;
-	-c )
-	cleanup ; losetup -D ; exit ;;
-	* ) ;;
+    -t )
+    trap cleanup SIGINT SIGTERM EXIT ;;
+    -c )
+    cleanup ; losetup -D ; exit ;;
+    * ) ;;
 esac
 
 
@@ -35,7 +36,7 @@ setup=false
 for t in $tools ; do
     if [ -z "`apk info -e $t`" ] ; then
         setup=true
-	toinst="$toinst $t"
+    toinst="$toinst $t"
     fi
 done
 $setup && apk add --no-cache $toinst
@@ -47,7 +48,7 @@ h=$PWD
 mkdir -p imgtmp
 cd imgtmp
 if [ ! -f image.pine ] ; then
-	wget -qO- $img_url | tar xzf - image.pine
+    wget -qO- $img_url | tar xzf - image.pine
 fi
 
 lon=0
@@ -68,7 +69,7 @@ ostree --repo=prepine init --mode=archive-z2
 ostree --repo=prepine pull-local loroot/ostree/repo trunk
 
 ## now commit the new tree to the old repo
-rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
+rev=$(ostree --repo=prepine commit -s $(date)'-build' -b trunk --tree=dir=${h}/${name}_tree)
 
 ## then generate the delta and archive it
 ostree --repo=prepine static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev}

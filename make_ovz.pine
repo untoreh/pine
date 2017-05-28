@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source functions.pine
-name=pine
+name=pine_ovz
 ref=trunk
 
 ## get release tag
@@ -69,19 +69,29 @@ stop() {
 EOF
 chmod +x etc/init.d/vardirs
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-cat <<'EOF' > etc/init.d/knobs
-=======
-cat <<EOF > etc/init.d/knobs
->>>>>>> d53bb0f... .
-=======
-cat <<'EOF' > etc/init.d/knobs
->>>>>>> 7735df6... .
-=======
+mkdir -p etc/local.d
+cat << EOF >etc/local.d/00-devs.start
+rm /dev/console
+rm /dev/full
+rm /dev/null
+rm /dev/zero
+rm /dev/ptmx
+rm /dev/tty
+rm /dev/random
+rm /dev/urandom
+
+mknod -m 622 /dev/console c 5 1
+mknod -m 666 /dev/full c 1 7
+mknod -m 666 /dev/null c 1 3
+mknod -m 666 /dev/zero c 1 5
+mknod -m 666 /dev/ptmx c 5 2
+mknod -m 666 /dev/tty c 5 0
+mknod -m 444 /dev/random c 1 8
+mknod -m 444 /dev/urandom c 1 9
+chown -v root:tty /dev/{console,ptmx,tty}
+EOF
+
 cat << 'EOF' >etc/init.d/knobs
->>>>>>> eb17261... fixed symlinks build error
 #!/sbin/openrc-run
 
 description="Knobs customizations"
@@ -161,18 +171,13 @@ stop() {
 EOF
 chmod +x etc/init.d/knobs
 
-## mount-ro env var
-mkdir -p etc/conf.d
-echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
-
 ## fstab
 cat << EOF >etc/fstab
-/dev/bd3                 /              xfs    rw,noatime,largeio,inode64                          0  0
-/dev/bd1                 /boot          xfs    rw,noexec,nodev,noatime,nodiratime,largeio,inode64  0  0
-/dev/bd2                 swap           swap   defaults                                            0  0
-/boot                    /sysroot/boot  none   bind                                                0  0
-/ostree/deploy/pine/var  /var           none   bind                                                0  0
-tmpfs                    /tmp           tmpfs  defaults,nosuid,nodev                               0  0
+proc                     /proc     proc    defaults               0  0
+none                     /dev/pts  devpts  rw,gid=5,mode=620      0  0
+none                     /dev/shm  tmpfs   defaults               0  0
+tmpfs                    /tmp      tmpfs   defaults,nosuid,nodev  0  0
+/ostree/deploy/pine/var  /var      none    bind                   0  0
 EOF
 
 ## repositories
@@ -197,20 +202,8 @@ iface eth0 inet dhcp
 EOF
 
 ## tunings
-<<<<<<< HEAD
-<<<<<<< HEAD
 mkdir -p etc/sysctl.d
-=======
-mkdir -p /etc/sysctl.d
->>>>>>> d53bb0f... .
-=======
-mkdir -p etc/sysctl.d
-<<<<<<< HEAD
->>>>>>> 19ae522... .
-cat <<EOF > etc/sysctl.d/01-grsec.conf
-=======
 cat << EOF >etc/sysctl.d/01-grsec.conf
->>>>>>> eb17261... fixed symlinks build error
 kernel.grsecurity.chroot_deny_fchdir=1
 kernel.grsecurity.chroot_deny_shmat=1
 kernel.grsecurity.chroot_deny_sysctl=1
@@ -228,15 +221,16 @@ kernel.grsecurity.chroot_restrict_nice=1
 kernel.pax.softmode=1
 EOF
 cat << EOF >etc/sysctl.d/02-tweaks.conf
+## ovz specific
+vm.swappiness=100
+vm.vfs_cache_pressure=0
+vm.min_free_kbytes=0
+vm.dirty_background_ratio=66
+vm.dirty_ratio=99
+
 ## mem
-<<<<<<< HEAD
-vm.swappiness=10
-vm.vfs_cache_pressure=40
-vm.dirty_background_ratio=4
-vm.dirty_ratio=80
 vm.overcommit_memory=1
 vm.overcommit_ratio=100
-vm.min_free_kbytes=65536
 kernel.pid_max=4194303
 fs.file-max=6544018
 fs.nr_open=6544018
@@ -285,51 +279,7 @@ kernel.sem=256 32000 100 142
 kernel.shmmni=4096
 EOF
 mkdir -p etc/security/limits.d
-<<<<<<< HEAD
-cat <<EOF > etc/security/limits.d/files.conf
-=======
-vm.swappiness=10 
-vm.vfs_cache_pressure=40 
-vm.dirty_background_ratio=4 
-vm.dirty_ratio=80 
-vm.overcommit_memory=1 
-vm.overcommit_ratio=100 
-vm.min_free_kbytes=65536 
-kernel.pid_max=4194303 
-fs.file-max=6544018
-
-## net
-net.core.rmem_max=1677721600 
-net.core.rmem_default=167772160 
-net.core.wmem_max=1677721600 
-net.core.wmem_default=167772160 
-net.core.netdev_max_backlog=30000 
-net.core.somaxconn=16384 
-net.core.optmem_max=2048000 
-net.ipv4.tcp_mem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_rmem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_wmem=" 1024000 8738000 1677721600" 
-net.ipv4.udp_mem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_congestion_control=htcp 
-net.ipv4.tcp_window_scaling=1 
-net.ipv4.tcp_sack=0 
-net.ipv4.tcp_dsack=0 
-net.ipv4.tcp_timestamps=0 
-net.ipv4.tcp_early_retrans=1 
-net.ipv4.tcp_app_win=40 
-net.ipv4.tcp_syncookies=1 
-net.ipv4.tcp_no_metrics_save=1
-EOF
-<<<<<<< HEAD
-cat <<EOF | sudo tee etc/security/limits.d/files.conf
->>>>>>> d53bb0f... .
-=======
-mkdir -p etc/security/limits.d
-cat <<EOF > etc/security/limits.d/files.conf
->>>>>>> 5ca453e... .
-=======
 cat << EOF >etc/security/limits.d/files.conf
->>>>>>> eb17261... fixed symlinks build error
 *         hard    nofile      917504
 *         soft    nofile      917504
 root      hard    nofile      917504
@@ -352,8 +302,7 @@ apkc() {
 
 
 apkc add --initdb --update-cache alpine-base sudo tzdata  \
- mkinitfs xfsprogs grub-bios \
- util-linux binutils coreutils blkid multipath-tools  \
+ binutils coreutils \
  ca-certificates wget ethtool iptables  \
  ostree git  \
  htop iftop bash sysstat tmux dropbear-ssh dropbear-scp openssh-sftp-server
@@ -365,11 +314,6 @@ cp -a usr/bin/mosh-server ./
 apkc del mosh-server
 apkc add dropbear-ssh dropbear-scp
 mv mosh-server usr/bin
-
-## fix for grub without syslinux
-rm etc/grub.d/10_linux
-## grub2 link for ostree compatibility
-ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
 
 ## SETUP
 chpwd() {
@@ -384,13 +328,12 @@ echo '' >etc/motd
 chpwd setup-hostname $hostname
 chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
-chpwd setup-ntp -c busybox
 
 ## DROPBEAR OPTIONS
 mkdir -p /root/.ssh /home/pine/.ssh
 
 ## SERVICES
-for r in `cat ../runlevels.pine`; do
+for r in `cat ../runlevels_ovz.pine`; do
     mkdir -p `dirname $r`
     ln -srf etc/init.d/`basename $r` `echo "$r" | sed 's#^/##'`
 done
@@ -401,32 +344,12 @@ chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
 source ../glib.pine $PWD
-source ../extras.pine
-
-## BOOT
-flavor="virthardened"
-apkc add --no-scripts linux-virthardened
-patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
-chroot $PWD mkinitfs  \
- -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \
- $(basename `ls -d lib/modules/*`)
-mv boot tmpboot && mkdir boot
-cp -a tmpboot/vmlinuz-virthardened boot/
-cp -a tmpboot/initramfs-virthardened boot/
-cksum=`cat boot/vmlinuz-virthardened boot/initramfs-virthardened | sha256sum | cut -f 1 -d ' '`
-mv boot/vmlinuz-virthardened boot/vmlinuz-virthardened-${cksum}
-mv boot/initramfs-virthardened boot/initramfs-virthardened-${cksum}
-rm tmpboot -rf
-
-## KERNEL MODULES
-KVER=$(cat usr/share/kernel/virthardened/kernel.release)
-mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
-cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
-chpwd depmod $KVER
+source ../extras_ovz.pine
 
 ## FIXES
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
+touch boot/vmlinuz-0000000000000000000000000000000000000000000000000000000000000000
 
 ## CLEANUP
 while `mountpoint -q ./proc`; do
@@ -451,7 +374,7 @@ rm sbin -rf && ln -s usr/sbin sbin
 
 ## OSTREE
 cd /srv
-ostree --repo=pine commit -s $(date)'-build' -b ${ref} --tree=dir=${name}_tree
-ostree summary -u --repo=pine
-ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' > pine.sum
+ostree --repo=${name} commit -s $(date)'-build' -b ${ref} --tree=dir=${name}_tree
+ostree summary -u --repo=${name}
+ostree --repo=${name} ls ${ref} -Cd | awk '{print $5}' > ${name}.sum
 #pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d

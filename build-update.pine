@@ -1,8 +1,9 @@
 #!/bin/bash
 source functions.pine
+name=pine
 
 ## confirm we made a new tree
-if [ ! "`find tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
+if [ ! "`find ${name}_tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
     echo "newer tree not grown. (tree folder is empty)"
     exit 1
 fi
@@ -52,7 +53,7 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
-rev=$(ostree --repo=/upos/ostree/repo commit -s $(date)'-build' -b trunk --tree=dir=${h}/tree)
+rev=$(ostree --repo=/upos/ostree/repo commit -s $(date)'-build' -b trunk --tree=dir=${h}/${name}_tree)
 
 ## compare checksums
 old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
