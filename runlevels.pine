@@ -22,4 +22,5 @@
 /etc/runlevels/default/dropbear
 /etc/runlevels/default/acpid
 /etc/runlevels/default/crond
+/etc/runlevels/default/klogd
 /etc/runlevels/default/docker

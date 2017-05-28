@@ -1,0 +1,40 @@
+#!/bin/bash
+source functions.pine
+name=pine_ovz
+os=pine
+artifact="rootfs_${name}.tgz"
+artifact_repo="untoreh/pine"
+delta="delta_ovz"
+rootfs=rootfs
+ref="trunk"
+
+## confirm we made a new tree
+if [ ! "`find ${name}_tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
+    echo "newer tree not grown. (tree folder is empty)"
+    exit 1
+fi
+
+install_tools ostree util-linux wget
+
+fetch_artifact $artifact_repo $artifact $rootfs
+
+## now commit the new tree to the previous repo in the rootfs
+rev=$(ostree --repo=$rootfs/ostree/repo commit -s $(date)'-build' -b $ref --tree=dir=${h}/${name}_tree)
+
+## compare checksums
+old_csum=$(fetch_artifact $artifact_repo /${name}.sum -)
+new_csum=$(ostree --repo=$rootfs/ostree/repo ls $ref -Cd | awk '{print $5}')
+compare_csums
+
+## upgrade deployment
+ostree --sysroot=$rootfs --os=$os admin upgrade
+## cleanup previous deployments
+ostree admin cleanup --sysroot=$rootfs
+## prune older commits
+ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
+## then generate the delta and archive it
+ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fallback-size 0 --filename=${rev}
+tar cf ${delta}.tar $rev
+
+## checksum and compress
+tar cvzf ${rootfs}.${name}.tgz $rootfs

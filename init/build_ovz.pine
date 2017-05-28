@@ -1,0 +1,22 @@
+#!/bin/bash
+source functions.pine
+
+cd /srv
+sysroot=/ovz
+delta="delta_ovz"
+os_name=pine_ovz
+artifact=rootfs
+ref=trunk
+
+rm -rf $sysroot &>/dev/null
+mkdir -p $sysroot
+
+ostree admin init-fs $sysroot
+ostree admin os-init --sysroot=$sysroot $os_name
+ostree --repo=${sysroot}/ostree/repo pull-local /srv/$os_name $ref
+ostree admin deploy --sysroot=$sysroot --os=$os_name $ref
+
+## checksum and compress
+tar cvzf ${artifact}.pine.tgz ${artifact}.pine
+## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
+echo 1>dummy && tar cvf ${delta}.tar dummy && rm dummy

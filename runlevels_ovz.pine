@@ -8,6 +8,8 @@
 /etc/runlevels/boot/urandom
 /etc/runlevels/boot/networking
 /etc/runlevels/boot/sysctl
+/etc/runlevels/sysinit/vardirs
+/etc/runlevels/sysinit/knobs
 /etc/runlevels/sysinit/dmesg
 /etc/runlevels/sysinit/hwdrivers
 /etc/runlevels/sysinit/devfs
@@ -16,7 +18,6 @@
 /etc/runlevels/shutdown/killprocs
 /etc/runlevels/default/dropbear
 /etc/runlevels/default/crond
-
-#/etc/runlevels/sysinit/vardirs
-#/etc/runlevels/sysinit/knobs
-#/etc/runlevels/shutdown/mount-ro
+/etc/runlevels/default/klogd
+/etc/runlevels/default/local
+/etc/runlevels/default/localmount
