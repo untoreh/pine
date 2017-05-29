@@ -17,6 +17,6 @@ ostree --repo=${sysroot}/ostree/repo pull-local /srv/$os_name $ref
 ostree admin deploy --sysroot=$sysroot --os=$os_name $ref
 
 ## checksum and compress
-tar cvzf ${artifact}.pine.tgz -C $sysroot .
+tar cvzf ${artifact}.${os_name}.tgz -C $sysroot .
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
 echo 1>dummy && tar cvf ${delta}.tar dummy && rm dummy
