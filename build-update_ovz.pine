@@ -9,14 +9,19 @@ rootfs=rootfs
 ref="trunk"
 
 ## confirm we made a new tree
-if [ ! "`find ${name}_tree/* -maxdepth 0 | wc -l`" -gt 0 ] ; then
-    echo "newer tree not grown. (tree folder is empty)"
-    exit 1
+if [ ! "$(find ${name}_tree/* -maxdepth 0 | wc -l)" -gt 0 ]; then
+	echo "newer tree not grown. (tree folder is empty)"
+	exit 1
 fi
 
 install_tools ostree util-linux wget
 
 fetch_artifact $artifact_repo $artifact $rootfs
+
+if [ "$?" = 1 ]; then
+	init/build_ovz.pine
+	exit
+fi
 
 ## now commit the new tree to the previous repo in the rootfs
 rev=$(ostree --repo=$rootfs/ostree/repo commit -s $(date)'-build' -b $ref --tree=dir=${h}/${name}_tree)

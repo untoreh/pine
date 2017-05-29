@@ -101,7 +101,7 @@ fetch_artifact() {
 			| grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
         dest="$3"
 	fi
-	[ -z "$(echo "$art_url" | grep "://")" ] && ( echo "no url found" && return 1 )
+	[ -z "$(echo "$art_url" | grep "://")" ] && echo "no url found" && return 1
 	## if no destination dir stream to stdo
 	if [ "$dest" = "-" ]; then
 		wget $art_url -qO-
