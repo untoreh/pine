@@ -1,14 +1,11 @@
 #!/bin/sh
 
-source functions.sh
 ## this file must be sourced to operate in the correct directory
 
 ## RUNC
 runc_repo="opencontainers/runc"
 RUNC_VERSION=$(last_release $runc_repo rc)
-fetch_artifact $runc_repo:$RUNC_VERSION ".*linux.*64.*" - >usr/bin/runc.bin
-cat << 'EOF' >
-EOF
+fetch_artifact $runc_repo:$RUNC_VERSION ".*linux.*64.*" - >usr/bin/runc
 
 ## CONSUL
 consul_repo="hashicorp/consul"

@@ -10,8 +10,10 @@ printc "initializing the repo..."
 ./repo.pine
 
 ## the tree of files
-printc "growing the tree..."
+printc "growing bare/kvm tree..."
 ./make.pine
+printc "growing ovz tree..."
+./make_ovz.pine
 
 ## update image from github
 printc "building image..."

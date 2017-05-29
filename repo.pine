@@ -12,4 +12,4 @@ init_repo() {
 }
 
 init_repo pine
-init repo pine_ovz
+init_repo pine_ovz

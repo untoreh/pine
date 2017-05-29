@@ -349,6 +349,7 @@ source ../extras_ovz.pine
 ## FIXES
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
+touch boot/vmlinuz-0000000000000000000000000000000000000000000000000000000000000000
 
 ## CLEANUP
 while `mountpoint -q ./proc`; do
