@@ -1,8 +1,8 @@
 #!/bin/sh
 
 if [ ! -d /host -o $(cat /etc/os-release | grep alpine) ]; then
-	echo "probably not in a ubuntu container..."
-	exit 1
+    echo "probably not in a ubuntu container..."
+    exit 1
 fi
 mkdir -p work && cd work
 
@@ -14,7 +14,7 @@ apt update -y -q && apt install -y -q beegfs-client
 
 ## get kernel packages names
 FLAVOR="virthardened"
-REPO="http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/"
+REPO="http://dl-cdn.alpinelinux.org/alpine/v3.6/main/x86_64/"
 PKGS=$(wget $REPO -qO- | grep -oE "\"linux-${FLAVOR}.*.apk\"" | sed 's/"//g')
 IMG_PKG=$(echo "$PKGS" | grep -v dev | head -1)
 DEV_PKG=$(echo "$PKGS" | grep dev | head -1)
@@ -31,6 +31,7 @@ KVER=$(cat usr/share/kernel/${FLAVOR}/kernel.release)
 
 ## specify kernel version in makefile and arch
 sed 's#$(shell uname -r)#'"$KVER"'#g' -i /opt/beegfs/src/client/*/build/Makefile
+sed 's#$(shell uname -r)#'"$KVER"'#g' -i /opt/beegfs/src/client/*/source/Makefile
 sed -r 's/^(buildArgs.*)/\1 ARCH=x86_64/' -i /etc/beegfs/beegfs-client-autobuild.conf
 
 ## move kernel files over standard paths
@@ -41,6 +42,7 @@ mv usr/src/* /usr/src/
 apt install libelf-dev gcc-5-plugin-dev -y -q
 cd /usr/src/linux-headers-${KVER}/
 make scripts 2>/dev/null ## ignore failed sortexec needing 
+make tools/objtool
 cd -
 ## build client
 /etc/init.d/beegfs-client rebuild
