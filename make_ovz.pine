@@ -171,13 +171,18 @@ stop() {
 EOF
 chmod +x etc/init.d/knobs
 
+## mount-ro env var
+mkdir -p etc/conf.d
+echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
+
 ## fstab
 cat << EOF >etc/fstab
-proc                     /proc     proc    defaults               0  0
-none                     /dev/pts  devpts  rw,gid=5,mode=620      0  0
-none                     /dev/shm  tmpfs   defaults               0  0
-tmpfs                    /tmp      tmpfs   defaults,nosuid,nodev  0  0
-/ostree/deploy/pine/var  /var      none    bind                   0  0
+proc                        /proc     proc    defaults               0  0
+none                        /dev/pts  devpts  rw,gid=5,mode=620      0  0
+none                        /dev/shm  tmpfs   defaults               0  0
+tmpfs                       /tmp      tmpfs   defaults,nosuid,nodev  0  0
+/ostree/deploy/${name}/var  /var      none    bind                   0  0
+/sysroot/boot               /boot     none    bind                   0  0
 EOF
 
 ## repositories
@@ -198,6 +203,7 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
+    pre-up ip link set eth0 up
     hostname pine
 EOF
 
@@ -339,7 +345,7 @@ for r in `cat ../runlevels_ovz.pine`; do
 done
 
 ## UPDATES/REBOOTS
-cp ../system-upgrade etc/periodic/daily
+cp ../system-upgrade_ovz etc/periodic/daily
 chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
@@ -350,6 +356,7 @@ source ../extras_ovz.pine
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
 touch boot/vmlinuz-0000000000000000000000000000000000000000000000000000000000000000
+sed -r 's/^(tty|1|2)/#tty/' -i etc/inittab
 
 ## CLEANUP
 while `mountpoint -q ./proc`; do

@@ -1,0 +1,167 @@
+#!/bin/sh
+
+case "$1" in
+    '-h|')
+        echo "Network config is copied over if found, or it is generated from the current
+session, or it is possble to use environment variables to specify
+network configuration, example:
+INTERFACE=eth0
+ADDRESS=192.168.1.100
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1"
+        exit
+        ;;
+    *)
+        export DEVICE=$1
+        ;;
+esac
+
+if [ -z "$NODE" ]; then
+    echo "specify node ID (16bit number, eg NODE=1)"
+    exit 1
+fi
+
+## mount tmpfs
+mkdir -p /flash && cd /flash
+
+## get busybox for rebooting (not needed when we create a chroot to customize the system)
+which apk && apk add --no-cache openssl ca-certificates
+which apt && apt update && apt install openssl ca-certificates
+wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+chmod +x busybox
+[ ! -e busybox -o ! -x busybox ] && exit 1
+mkdir bin
+$PWD/busybox --install -s $PWD/bin
+export PATH=$PWD/bin:$PATH
+
+## generate /etc/network-environment
+IPv6=$(ip -6 addr | awk 'tolower($0) ~ /global/{gsub(/\/64/, ""); print $2; exit}')
+IPv4=$(ip -4 -o add | awk 'match($0, /(enp[0-9]*s[0-9]*)|(eth[0-9]*)/){gsub(/\/[0-9]{1,2}/,"",$4);print $4; exit}')
+echo "NODE=$NODE" >./network-environment
+[ -n "$IPv4" ] && echo "IPv4=$IPv4" >>./network-environment
+[ -n "$IPv6" ] && echo "IPv6=$IPv6" >>./network-environment
+
+## give chroot capabilities
+sysctl -w \
+    kernel.grsecurity.chroot_deny_fchdir=0 \
+    kernel.grsecurity.chroot_deny_shmat=0 \
+    kernel.grsecurity.chroot_deny_sysctl=0 \
+    kernel.grsecurity.chroot_deny_unix=0 \
+    kernel.grsecurity.chroot_enforce_chdir=0 \
+    kernel.grsecurity.chroot_findtask=0 \
+    kernel.grsecurity.chroot_caps=0 \
+    kernel.grsecurity.chroot_deny_chmod=0 \
+    kernel.grsecurity.chroot_deny_chroot=0 \
+    kernel.grsecurity.chroot_deny_mknod=0 \
+    kernel.grsecurity.chroot_deny_mount=0 \
+    kernel.grsecurity.chroot_deny_pivot=0 \
+    kernel.grsecurity.chroot_restrict_nice=0 &>/dev/null
+
+## copy network interfaces
+if [ "$(cat /etc/network/interfaces | grep -v lo | grep inet | wc -l)" -gt 0 ]; then
+    cp /etc/network/interfaces ./
+fi
+
+rem_repo="untoreh/pine"
+artifact="rootfs.pine_ovz.tgz"
+
+## get image url
+img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+echo $img_url
+
+## direct piping allows for fast flashing on low ram but can't verify checksum and
+## setup networking devices and drives
+#wget -qO- $img_url | tar xzf -O image.pine | dd of=$DEVICE bs=512 conv=notrunc,fsync
+
+## download and extract the image to rootfs folder for customizations
+pwd=$PWD
+mkdir rootfs
+wget -qO- $img_url | tar xmz -C rootfs
+
+dpl=$(ls -dt $pwd/rootfs/ostree/deploy/pine*/deploy/* | grep -E "\.[0-9]$" | head -1)
+## setup network
+if [ -f "./interfaces" -a -z "$IFACE" ]; then
+    awk '!seen[$0]++' ./interfaces >interfaces.cleaned
+    mv interfaces.cleaned ${dpl}/etc/network/interfaces
+else
+    if [ -z "$IFACE" ]; then
+        IFACE=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*|venet[0-9]*" | head -1)
+        ADDRESS=$(ip -4 addr | grep $IFACE | grep inet | grep global | sed -r 's~.*inet\s*([^ ]*).*~\1~' | head -1)
+        NETMASK=$(ipcalc $ADDRESS -m | cut -d= -f2) ## used from the busybox applet
+        GATEWAY=$(ip -4 route | grep $IFACE | head -1 | sed -r 's/(default (via|dev) )?([^\s ]*) .*/\3/')
+    fi
+
+    cat <<EOF >${dpl}/etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto $IFACE
+iface $IFACE inet static
+    address $ADDRESS
+    netmask $NETMASK
+    gateway $GATEWAY
+    hostname pine
+EOF
+fi
+## setup network environment
+mv ./network-environment ${dpl}/etc/network-environment
+echo -e "set -a\n. /etc/network-environment\nset +a" >${dpl}/etc/profile.d/network-environment.sh
+
+## overwrite the fs
+umount /etc/hostname /etc/hosts /etc/resolv.conf &>/dev/null
+for p in $(find /* -maxdepth 0 -type d | grep -vE "flash$|dev$|sys$|proc$|run$"); do
+    grep ${p} /proc/mounts | cut -f2 -d" " | sort -r | xargs -I{} umount {}
+    rm -rf ${p}
+done
+
+cp -a rootfs/* /
+dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.0$" | head -1)
+dpl_path=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
+
+## busybox installation for init
+mkdir -p /bin
+cp ./busybox /bin/
+/bin/busybox --install -s /bin
+export PATH=/bin:$PATH
+
+## pre init setup
+rm -f /bin/init
+cat << 'EOF' > /bin/init
+#!/bin/busybox sh
+
+/bin/busybox --install -s /bin && PATH=/bin:/bin:$PATH
+dpl=$(ls -tr /ostree/deploy/*/deploy | grep "\.[0-9]$" | head -1)
+ostree=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
+
+mount -o bind,private,rw $ostree $ostree
+mount -o bind,private,rw / $ostree/sysroot
+mount -o bind,private,ro $ostree/usr $ostree/usr
+mount -o rbind,rshared /dev $ostree/dev
+mount -o rbind,rshared /proc $ostree/proc
+mount -o rbind,rshared /sys $ostree/sys
+sync
+
+exec chroot $ostree /sbin/init ostree=$ostree
+EOF
+chmod +x /bin/init
+
+## cleanup
+cd /
+rm -rf /flash
+
+# cd /
+# for t in $(find ${dpl_path}/* -maxdepth 0 | grep -vE "ostree$|sysroot$|boot$|sys$|dev$|proc$"); do
+#     mkdir -p /$(basename $t)
+#     ln -sf ${t}/* /$(basename $t)/
+# done
+# cd -
+
+## reboot
+sync
+echo -n "rebooting in 3..."
+sleep 1
+echo -n "2..."
+sleep 1
+echo "1..."
+sleep 1
+reboot -f
