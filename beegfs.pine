@@ -38,7 +38,7 @@ mv lib/modules/* /lib/modules/
 mv usr/src/* /usr/src/
 
 ## make scripts
-apt install libelf-dev gcc-5-plugin-dev
+apt install libelf-dev gcc-5-plugin-dev -y -q
 cd /usr/src/linux-headers-${KVER}/
 make scripts 2>/dev/null ## ignore failed sortexec needing 
 cd -
