@@ -13,9 +13,9 @@ wget -qP /etc/apt/sources.list.d http://www.beegfs.com/release/latest-stable/dis
 apt update -y -q && apt install -y -q beegfs-client
 
 ## get kernel packages names
-FLAVOR="linux-virthardened"
+FLAVOR="virthardened"
 REPO="http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/"
-PKGS=$(wget $REPO -qO- | grep -oE "\"${FLAVOR}.*.apk\"" | sed 's/"//g')
+PKGS=$(wget $REPO -qO- | grep -oE "\"linux-${FLAVOR}.*.apk\"" | sed 's/"//g')
 IMG_PKG=$(echo "$PKGS" | grep -v dev | head -1)
 DEV_PKG=$(echo "$PKGS" | grep dev | head -1)
 
@@ -27,7 +27,7 @@ tar xf $DEV_PKG 2>/dev/null
 
 ## use kernel.release instead of generating from pkg name
 ## KVER=$(echo "$IMG_PKG" | sed -r 's/linux-virtgrsec-([^-]*)-r([0-9]+).*/\1-\2-virtgrsec/')
-KVER=$(cat usr/share/kernel/virtgrsec/kernel.release)
+KVER=$(cat usr/share/kernel/${FLAVOR}/kernel.release)
 
 ## specify kernel version in makefile and arch
 sed 's#$(shell uname -r)#'"$KVER"'#g' -i /opt/beegfs/src/client/*/build/Makefile
