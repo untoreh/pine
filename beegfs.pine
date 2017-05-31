@@ -38,8 +38,8 @@ mv lib/modules/* /lib/modules/
 mv usr/src/* /usr/src/
 
 ## make scripts
+apt install libelf-dev gcc-5-plugin-dev
 cd /usr/src/linux-headers-${KVER}/
-export DISABLE_PAX_PLUGINS=y
 make scripts 2>/dev/null ## ignore failed sortexec needing linux-grsec pkg files
 cd -
 ## build client
