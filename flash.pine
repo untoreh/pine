@@ -28,6 +28,16 @@ fi
 mkdir -p pivot && mount -t tmpfs -o exec tmpfs pivot
 cd pivot
 
+## get busybox for rebooting (not needed when we create a chroot to customize the system)
+which apk && apk add --no-cache openssl ca-certificates
+which apt && apt update && apt install openssl ca-certificates
+wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+chmod +x busybox
+[ ! -e busybox -o ! -x busybox ] && exit 1
+mkdir bin
+$PWD/busybox --install -s $PWD/bin
+export PATH=$PWD/bin:$PATH
+
 ## generate /etc/network-environment
 IPv6=$(ip -6 addr | awk 'tolower($0) ~ /global/{gsub(/\/64/, ""); print $2; exit}')
 IPv4=$(ip -4 -o add | awk 'match($0, /(enp[0-9]*s[0-9]*)|(eth[0-9]*)/){gsub(/\/[0-9]{1,2}/,"",$4);print $4; exit}')
@@ -50,11 +60,6 @@ sysctl -w  \
  kernel.grsecurity.chroot_deny_mount=0  \
  kernel.grsecurity.chroot_deny_pivot=0  \
  kernel.grsecurity.chroot_restrict_nice=0 &>/dev/null
-
-## get busybox for rebooting (not needed because we create a chroot to customize
-## the system)
-wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
-chmod +x busybox
 
 ## copy network interfaces
 if [ "$(cat /etc/network/interfaces | grep -v lo | grep inet | wc -l)" -gt 0 ]; then
@@ -115,7 +120,7 @@ else
         IFACE=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*" | head -1)
         ADDRESS=$(ip -4 addr | grep $IFACE | grep inet | sed -r 's~.*inet\s*([^ ]*).*~\1~' | head -1)
         NETMASK=$(busybox ipcalc $ADDRESS -m | cut -d= -f2) ## used from the busybox applet
-        GATEWAY=$(ip -4 route | grep $IFACE | head -1 | sed -r 's/default via ([^\s ]*).*/\1/')
+        GATEWAY=$(ip -4 route | grep $IFACE | head -1 | sed -r 's/(default (via|dev) )?([^\s ]*) .*/\3/')
     fi
 
     cat << EOF >${dpl}/etc/network/interfaces
@@ -132,7 +137,7 @@ EOF
 fi
 ## setup network environment
 mv ./network-environment ${dpl}/etc/network-environment
-echo -e "set -a\n. /etc/network-environment\nset +a" > /etc/profile.d/network-environment.sh
+echo -e "set -a\n. /etc/network-environment\nset +a" > ${dpl}/etc/profile.d/network-environment.sh
 ## add node engine label to docker daemon
 sed -r 's~(DOCKER_OPTS=".*)"~\1 --label NODE='$NODE' "~' -i ${dpl}/etc/conf.d/docker
 

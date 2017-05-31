@@ -1,0 +1,110 @@
+#!/bin/sh
+
+## recreate commit, is this part atomic?
+## ostree refs --delete trunk
+## ostree refs --create trunk $cmt
+## - if the delta application is interrupted ostree itself should deal with it so
+## it is not a problem of the update process
+## - if the update process is interrupted while manipulating revisions it is not
+## a problem because delete->create is dumb and will always go through on sequent
+## runs.
+## - ostree admin upgrade is supposed to be atomic, we run it before recreating
+## the ref in case it was interrupted,
+
+## sanity check
+which ostree &>/dev/null \
+    || (echo "Not an ostree installation, terminating." && exit 1)
+ls /ostree/deploy | grep ovz \
+    || (echo "Not an ovz deployment, terminating." && exit 1)
+
+## vars
+repo=untoreh/pine
+ref=trunk
+work=/var/tmp/pine-upgrade
+rc-update show default | grep clearlock && echo
+delta="delta_ovz"
+os="pine_ovz"
+
+## funcs
+wrap_up() {
+    ## cleanup tmp folder
+    rm -rf $work
+    ## prune ostree
+    ostree prune --refs-only --keep-younger-than="1 months ago"
+    ## finish
+    if [ $upg ]; then
+        echo -e "$curV updated to:\n$lasV -- $cmt\n@ $(date)\nrebooting..."
+        reboot lock queue -d 10
+    else
+        echo -e "$curV checked for updates.\n@ $(date)"
+    fi
+}
+
+get_delta() {
+    ## download delta
+    wget -q https://github.com/${repo}/releases/download/${lasV}/${delta} -O delta.tar
+    ## deltas can't be piped
+    tar xf delta.tar && rm delta.tar
+    if [ -f delta.tar ]; then
+        echo "error: failed downloading the new delta."
+        exit 1
+    fi
+    get_commit
+}
+
+get_commit() {
+    ## the delta file name is also the commit number
+    export cmt=$(basename $(find | grep -E [a-z0-9]{64}))
+}
+
+apply_upgrade() {
+    ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
+    upg=$(ostree admin upgrade --override-commit=$cmt | grep -q "Transaction complete" && echo true)
+    ## if no upgrade was done
+    if [ ! $upg ]; then
+        ostree static-delta apply-offline $cmt
+        upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -q "Transaction complete" && echo true)
+    fi
+    ## for ovz we need to checkout the deployment manually because of lack of initramfs
+    dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.0$" | head -1)
+    dpl_path=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
+    ## use the busybox-static bin in sysroot which should be installed by the flash/setup script
+    # PATH=$PATH:/sysroot/bin
+}
+
+## get the current version
+curV=$(cat /etc/pine)
+
+## get the latest version on github
+lasV=$(git ls-remote -t git://github.com/${repo}.git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k1nr -k2nr | head -1)
+
+## compare
+if [ ! $curV = $lasV ]; then
+    ## if tmp folder exists an update didn't end properly
+    if [ -d $work ]; then
+        cd $work
+        get_commit
+        ## we have a delta file, try upgrade
+        if [ -n "$cmt" ]; then
+            apply_upgrade
+            ## if upgrade didn't happen delta file might be corrupted
+            if [ ! $upg ]; then
+                get_delta
+                apply_upgrade
+            fi
+        else
+            ## get the delta file, upgrade
+            get_delta
+            apply_upgrade
+        fi
+    else
+        mkdir -p $work
+        cd $work
+        ## get the delta file, upgrade
+        get_delta
+        apply_upgrade
+    fi
+fi
+
+## clean tmp folder, potentially reboot
+wrap_up

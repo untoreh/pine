@@ -20,7 +20,7 @@ deploy:
   file:
     - "image.pine.tgz"
     - "rootfs.pine_ovz.tgz"
-    - "delta.tar"
+    - "delta*.tar"
     - "pine.sum"
     - "pine_ovz.sum"
   skip_cleanup: true
