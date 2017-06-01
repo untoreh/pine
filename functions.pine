@@ -47,9 +47,9 @@ next_release() {
     while
         cur_tag=$(echo "$near_tags" | awk '/'$cur_tag'/{getline; print $0}')
         echo "looking for releases tagged $cur_tag" 1>&2
-        next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag}${gh_token}) 
+        next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag}${gh_token})
         [ -z "$next_release" -a -n "$cur_tag" ]
-        do :
+    do :
     done
     echo $cur_tag
 }
@@ -120,9 +120,12 @@ fetch_artifact() {
         local repo_fetch=${1/:*/} repo_tag=${1/*:/}
         [ -z "$repo_tag" -o "$repo_tag" = "$1" ] && repo_tag=latest || path_repo_tag=tags/$repo_tag
         artf="$2"
-        art_url="https://github.com/${repo_fetch}/releases/download/${repo_tag}/${artf}"
-        # art_url=$(wget -qO- https://api.github.com/repos/${repo_fetch}/releases/${repo_tag} \
-        #     | grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
+        if [ "$repo_tag" = "latest" ]; then
+            art_url=$(wget -qO- https://api.github.com/repos/${repo_fetch}/releases/${repo_tag} \
+                | grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
+            else
+            art_url="https://github.com/${repo_fetch}/releases/download/${repo_tag}/${artf}"
+        fi
         dest="$3"
     fi
     [ -z "$(echo "$art_url" | grep "://")" ] && echo "no url found" && return 1
@@ -135,7 +138,8 @@ fetch_artifact() {
             wget $art_url -qO- | tar xzf - -C $dest
         else
             if [ $(echo "$artf" | grep -E "zip") ]; then
-                wget $art_url -qO artifact.zip && unzip artifact.zip -d $dest ; rm artifact.zip
+                wget $art_url -qO artifact.zip && unzip artifact.zip -d $dest
+                rm artifact.zip
             else
                 wget $art_url -qO- | tar xf - -C $dest
             fi
