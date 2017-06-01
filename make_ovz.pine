@@ -345,7 +345,7 @@ for r in `cat ../runlevels_ovz.pine`; do
 done
 
 ## UPDATES/REBOOTS
-cp ../system-upgrade_ovz etc/periodic/daily
+cp ../system-upgrade_ovz etc/periodic/daily/system-upgrade
 chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB

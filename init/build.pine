@@ -11,7 +11,7 @@ losetup -P /dev/loop0 image.pine
 
 sfdisk /dev/loop0 < layout.pine
 mkfs.xfs -f -L /boot -i size=1024 /dev/loop0p1
-mkfs.xfs -f -L /sysroot -d agcount=8 -i size=1024 /dev/loop0p3
+mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 /dev/loop0p3
 mkswap -L swap /dev/loop0p2
 
 mount /dev/loop0p3 /os

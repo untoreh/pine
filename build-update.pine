@@ -51,9 +51,13 @@ mount -o nouuid /dev/loop${lon}p3 /upos
 mkdir -p /upos/boot
 mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
+## prune before commit
+deployments=$(ostree --repo=/upos/ostree/repo refs | grep ostree/)
+ostree --repo=/upos/ostree/repo refs --delete $deployments
+ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="3 months ago"
+
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
-ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="3 months ago"
 rev=$(ostree --repo=/upos/ostree/repo commit -s $(date)'-build' -b trunk --tree=dir=${h}/${name}_tree)
 
 ## compare checksums
