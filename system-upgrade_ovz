@@ -41,11 +41,11 @@ wrap_up() {
 }
 
 get_delta() {
+    nexV=$(next_release $repo $curV)
+    [ -z "$nexV" ] && echo "warn: possibly no new versions" && exit 
     ## download delta
-    wget -q https://github.com/${repo}/releases/download/${lasV}/${delta} -O delta.tar
-    ## deltas can't be piped
-    tar xf delta.tar && rm delta.tar
-    if [ -f delta.tar ]; then
+    fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
+    if ! $?; then
         echo "error: failed downloading the new delta."
         exit 1
     fi

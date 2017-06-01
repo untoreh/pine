@@ -1,7 +1,7 @@
 #!/bin/bash
 
 gem install travis
-source functions.sh
+source functions.*
 env >build.env
 
 handle_deploy() {
