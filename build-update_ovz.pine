@@ -2,7 +2,7 @@
 source functions.pine
 name=pine_ovz
 os=pine
-artifact="rootfs_${name}.tgz"
+artifact="rootfs.${name}.tgz"
 artifact_repo="untoreh/pine"
 delta="delta_ovz"
 rootfs=rootfs
@@ -19,6 +19,7 @@ install_tools ostree util-linux wget
 fetch_artifact $artifact_repo $artifact $rootfs
 
 if [ "$?" = 1 ]; then
+	echo "no previous build found, creating new rootfs"
 	init/build_ovz.pine
 	exit
 fi
