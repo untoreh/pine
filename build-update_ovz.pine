@@ -29,7 +29,7 @@ deployments=$(ostree --repo=$rootfs/ostree/repo refs | grep ostree/)
 ostree --repo=$rootfs/ostree/repo refs --delete $deployments
 ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
 ## now commit the new tree to the previous repo in the rootfs
-rev=$(ostree --repo=$rootfs/ostree/repo commit -s $(date)'-build' -b $ref --tree=dir=${h}/${name}_tree)
+rev=$(ostree --repo=$rootfs/ostree/repo commit -s $(date)'-build' -b $ref --tree=dir=${name}_tree)
 
 ## compare checksums
 old_csum=$(fetch_artifact $artifact_repo /${name}.sum -)
