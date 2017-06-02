@@ -5,11 +5,11 @@ name=pine
 ref=trunk
 
 ## get release tag
-newV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
- awk '/tag_name/ { print $2 }' | head -1 | sed -r 's/",?//g'`
+# newV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
+#  awk '/tag_name/ { print $2 }' | head -1 | sed -r 's/",?//g'`
 ## newV=`pine_version` ## this does not account for gh releases same as "git tag"
 ## local tag checks
-# newV=`git tag --sort=committerdate | tail -1`
+newV=`git tag --sort=committerdate | tail -1`
 
 printc "$newV is the new version"
 
