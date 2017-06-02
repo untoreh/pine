@@ -48,4 +48,4 @@ ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fall
 tar cf ${delta}.tar $rev
 
 ## checksum and compress
-tar cvzf ${rootfs}.${name}.tgz -C $rootfs *
+tar czf ${rootfs}.${name}.tgz -C $rootfs *
