@@ -117,5 +117,5 @@ mv imgtmp/image.pine ./
 
 ## checksum and compress
 sha256sum image.pine >image.pine.sum
-tar cvzf image.pine.tgz image.pine image.pine.sum
+tar czf image.pine.tgz image.pine image.pine.sum
 echo $new_csum >pine.sum
