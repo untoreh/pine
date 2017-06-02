@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export alpV="v3.6"
+
 case "$1" in
     -a)
         export DEVICE=`find /dev 2>/dev/null -maxdepth 1 |  \
@@ -25,18 +27,19 @@ if [ -z "$NODE" ] ; then
 fi
 
 ## mount tmpfs
-mkdir -p pivot && mount -t tmpfs -o exec tmpfs pivot
+mkdir -p pivot && mount -t tmpfs -o exec,size=768M tmpfs pivot
 cd pivot
 
 ## get busybox for rebooting (not needed when we create a chroot to customize the system)
-which apk && apk add --no-cache openssl ca-certificates
-which apt && apt update && apt install openssl ca-certificates
+which apk && apk add --no-cache openssl libressl ca-certificates
+which apt && apt update && apt install openssl ca-certificates -yq
 wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
 chmod +x busybox
 [ ! -e busybox -o ! -x busybox ] && exit 1
-mkdir bin
-$PWD/busybox --install -s $PWD/bin
-export PATH=$PWD/bin:$PATH
+mkdir bbin
+cp -a busybox bbin/
+$PWD/bbin/busybox --install -s $PWD/bbin
+export PATH=$PWD/bbin:$PATH WORK=$PWD
 
 ## generate /etc/network-environment
 IPv6=$(ip -6 addr | awk 'tolower($0) ~ /global/{gsub(/\/64/, ""); print $2; exit}')
@@ -67,29 +70,30 @@ if [ "$(cat /etc/network/interfaces | grep -v lo | grep inet | wc -l)" -gt 0 ]; 
 fi
 
 ## setup alp-base to get tools to mount the image to customize it before flashing
-apkt=`wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/ -qO- |  \
+mkdir -p proc sys dev tmp run mnt etc
+apkt=`wget -cT 3 https://dl-cdn.alpinelinux.org/alpine/${alpV}/main/x86_64/ -qO- |  \
  grep -oE '"apk-tools-static.*.apk"' | sed 's/"//g'`
-wget http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/$apkt
+wget -cT 3 "https://dl-cdn.alpinelinux.org/alpine/${alpV}/main/x86_64/$apkt" || exit 1
+sync
 tar xzf $apkt
-ln -sr sbin/apk.static sbin/apk
-sbin/apk.static -X http://dl-cdn.alpinelinux.org/alpine/latest-stable/main -U  \
+ln -s sbin/apk.static sbin/apk
+sbin/apk.static -X http://dl-cdn.alpinelinux.org/alpine/${alpV}/main -U  \
  --allow-untrusted --root ./ --initdb add alpine-base xfsprogs util-linux wget  \
  ca-certificates coreutils
 cp /etc/resolv.conf etc/
-mkdir -p proc sys dev tmp run mnt
+
 ## tree must be binded and not moved to allow the kernel to update partition tables
 mount --bind /dev dev
 mount --bind /sys sys
 mount --bind /proc proc
 cat << 'CEOF' >customize.pine
-#!/bin/bash
-
+#!/bin/sh
 ## pass device name
 DEVICE=$1
 source ./network-environment
 
 ## get image url
-img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 echo $img_url
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
@@ -162,7 +166,8 @@ xfs_repair /dev/loop0p3
 
 losetup -D
 sync
-dd if=image.pine of=$DEVICE bs=512 conv=notrunc,fsync
+dd if=image.pine of=$DEVICE bs=4M conv=fsync
+rm -f image.pine
 
 ## setup additional partitions, (4) is extended partition so it is skipped
 ## init extended partition
@@ -180,7 +185,7 @@ fi
 ## write statement
 part_str=$part_str'w\n'
 ## execute fdisk
-echo -e $part_str | fdisk $DEVICE
+/bin/echo -e $part_str | fdisk $DEVICE
 sleep 1
 ## loop the target device to make sure partition tables are updated
 lon=0
@@ -192,15 +197,15 @@ done
 LODEV=/dev/loop${lon}p
 ## add extra partitions
 if [ "$DP_F" ] ; then
-    mkfs.xfs -f -L /var -d agcount=8 -l logdev=${LODEV}6 -i size=512 ${LODEV}5
-    mkfs.xfs -f -L /share -d agcount=8 -l logdev=${LODEV}7 -i size=512 ${LODEV}8
+    mkfs.xfs -f -L /var -d agsize=16m -l logdev=${LODEV}6 -i size=512 ${LODEV}5
+    mkfs.xfs -f -L /share -d agsize=16m -l logdev=${LODEV}7 -i size=512 ${LODEV}8
 fi
 ## copy content of os var folder over the partition created, if using defaults
 ## otherwise `ostree admin unlock` does not work ("mkdirat: no such file or directory")
 mkdir -p varostree
 mkdir -p varpart
-mount ${LODEV}3 varostree
-mount ${LODEV}5 varpart
+mount -o nouuid ${LODEV}3 varostree
+mount -o nouuid,logdev=${LODEV}6 ${LODEV}5 varpart
 cp -a varostree/ostree/deploy/pine/var/* varpart/
 umount varpart varostree
 ## detach loop devices
@@ -212,4 +217,5 @@ echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; slee
 reboot -f
 CEOF
 chmod +x customize.pine
-./busybox chroot ./ /bin/busybox sh customize.pine $DEVICE
+#pivot_root $WORK $WORK/mnt 
+chroot . /bin/sh -x customize.pine $DEVICE
