@@ -1,4 +1,5 @@
 #!/bin/sh
+source /etc/profile.d/func.sh
 
 ## recreate commit, is this part atomic?
 ## ostree refs --delete trunk
@@ -16,12 +17,12 @@ which ostree &>/dev/null \
     || (echo "Not an ostree installation, terminating." && exit 1)
 ls /ostree/deploy | grep ovz \
     || (echo "Not an ovz deployment, terminating." && exit 1)
+rc-update show default | grep clearlock || exit 1
 
 ## vars
 repo=untoreh/pine
 ref=trunk
 work=/var/tmp/pine-upgrade
-rc-update show default | grep clearlock && echo
 delta="delta_ovz"
 os="pine_ovz"
 
@@ -54,7 +55,8 @@ get_delta() {
 
 get_commit() {
     ## the delta file name is also the commit number
-    export cmt=$(basename $(find | grep -E [a-z0-9]{64}))
+    export cmt=$(basename $(find | grep -E [a-z0-9]{64}) 2>/dev/null)
+    [ -z "$cmt" ] && echo "error: no file carried the name of a commit." && return 1
 }
 
 apply_upgrade() {

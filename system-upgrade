@@ -14,12 +14,12 @@ source /etc/profile.d/func.sh
 
 ## sanity check
 which ostree &>/dev/null || ( echo "Not an ostree installation, terminating." && exit 1 )
+rc-update show default | grep clearlock || exit 1
 
 ## vars
 repo=untoreh/pine
 ref=trunk
 work=/var/tmp/pine-upgrade
-rc-update show default | grep clearlock && echo
 
 ## funcs
 wrap_up() {

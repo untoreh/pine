@@ -1,8 +1,7 @@
 #!/bin/bash
 source functions.pine
 name=pine_ovz
-os=pine
-artifact="rootfs_${name}.tgz"
+artifact="rootfs.${name}.tgz"
 artifact_repo="untoreh/pine"
 delta="delta_ovz"
 rootfs=rootfs
@@ -19,26 +18,29 @@ install_tools ostree util-linux wget
 fetch_artifact $artifact_repo $artifact $rootfs
 
 if [ "$?" = 1 ]; then
+	echo "no previous build found, creating new rootfs"
 	init/build_ovz.pine
 	exit
 fi
 
-## prune before commit
+## delete deployments and prune before commit
 deployments=$(ostree --repo=$rootfs/ostree/repo refs | grep ostree/)
 ostree --repo=$rootfs/ostree/repo refs --delete $deployments
 ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
 ## now commit the new tree to the previous repo in the rootfs
-rev=$(ostree --repo=$rootfs/ostree/repo commit -s $(date)'-build' -b $ref --tree=dir=${h}/${name}_tree)
+rev=$(ostree --repo=$rootfs/ostree/repo commit --skip-if-unchanged -s $(date)'-build' -b $ref --tree=dir=${name}_tree)
 
 ## compare checksums
 old_csum=$(fetch_artifact $artifact_repo /${name}.sum -)
 new_csum=$(ostree --repo=$rootfs/ostree/repo ls $ref -Cd | awk '{print $5}')
 compare_csums
 
-## upgrade deployment
-ostree --sysroot=$rootfs --os=$os admin upgrade
-## cleanup previous deployments
-ostree admin cleanup --sysroot=$rootfs
+## redeploy
+## remote boot files to avoid failing the upgrade (because it triggers ostree grub
+## hooks which don't work in the build environment
+rm -rf $rootfs/boot/grub*
+ostree admin deploy --sysroot=$rootfs --os=$name trunk
+
 ## prune older commits
 ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
 ## then generate the delta and archive it

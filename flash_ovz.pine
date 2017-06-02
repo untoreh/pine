@@ -152,13 +152,6 @@ chmod +x /bin/init
 cd /
 rm -rf /flash
 
-# cd /
-# for t in $(find ${dpl_path}/* -maxdepth 0 | grep -vE "ostree$|sysroot$|boot$|sys$|dev$|proc$"); do
-#     mkdir -p /$(basename $t)
-#     ln -sf ${t}/* /$(basename $t)/
-# done
-# cd -
-
 ## reboot
 sync
 echo -n "rebooting in 3..."
