@@ -99,7 +99,7 @@ chroot /upos grub-mkconfig -o /boot/${loader}/grub.cfg
 cd /upos/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
 
 ## then generate the delta and archive it
-ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev}
+ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/" 
 cd ${h}
 tar cf delta.tar $rev
 

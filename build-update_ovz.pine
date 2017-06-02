@@ -44,7 +44,7 @@ ostree admin deploy --sysroot=$rootfs --os=$name trunk
 ## prune older commits
 ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
 ## then generate the delta and archive it
-ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fallback-size 0 --filename=${rev}
+ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/" 
 tar cf ${delta}.tar $rev
 
 ## checksum and compress
