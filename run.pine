@@ -32,4 +32,4 @@ main() {
 	fi
 }
 
-main 2> >(sed $'s,.*,\e[01;31m&\e[m,'>&2)
+rse main
