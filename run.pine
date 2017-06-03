@@ -1,31 +1,35 @@
 #!/bin/sh
 source functions.pine
 
-## prepare
-printc "preparing..."
-./prepare.pine
+main() {
+	## prepare
+	printc "preparing..."
+	./prepare.pine
 
-## init the repo
-printc "initializing the repo..."
-./repo.pine
+	## init the repo
+	printc "initializing the repo..."
+	./repo.pine
 
-## the tree of files
-printc "growing bare/kvm tree..."
-./make.pine
-printc "growing ovz tree..."
-./make_ovz.pine
+	## the tree of files
+	printc "growing bare/kvm tree..."
+	./make.pine
+	printc "growing ovz tree..."
+	./make_ovz.pine
 
-## update image from github
-printc "building image..."
-printc $TRAVIS_COMMIT_MESSAGE
-if [ $(echo "$TRAVIS_COMMIT_MESSAGE" | grep "scratch-build") ]; then
-	printc "this is a scratch build..."
-	./init/build.pine
-	printc "ovz..."
-    ./init/build_ovz.pine
-else
-	printc "this is an updated build..."
-	./build-update.pine
-	printc "ovz..."
-	./build-update_ovz.pine
-fi
+	## update image from github
+	printc "building image..."
+	printc $TRAVIS_COMMIT_MESSAGE
+	if [ $(echo "$TRAVIS_COMMIT_MESSAGE" | grep "scratch-build") ]; then
+		printc "this is a scratch build..."
+		./init/build.pine
+		printc "ovz..."
+		./init/build_ovz.pine
+	else
+		printc "this is an updated build..."
+		./build-update.pine
+		printc "ovz..."
+		./build-update_ovz.pine
+	fi
+}
+
+rse main
