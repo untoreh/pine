@@ -46,7 +46,7 @@ get_delta() {
     [ -z "$nexV" ] && echo "warn: possibly no new versions" && exit 
     ## download delta
     fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
-    if ! $?; then
+    if [ $? != 0 ]; then
         echo "error: failed downloading the new delta."
         exit 1
     fi
@@ -61,17 +61,12 @@ get_commit() {
 
 apply_upgrade() {
     ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
-    upg=$(ostree admin upgrade --override-commit=$cmt | grep -q "Transaction complete" && echo true)
+    upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true)
     ## if no upgrade was done
     if [ ! $upg ]; then
         ostree static-delta apply-offline $cmt
-        upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -q "Transaction complete" && echo true)
+        upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true)
     fi
-    ## for ovz we need to checkout the deployment manually because of lack of initramfs
-    dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.0$" | head -1)
-    dpl_path=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
-    ## use the busybox-static bin in sysroot which should be installed by the flash/setup script
-    # PATH=$PATH:/sysroot/bin
 }
 
 ## get the current version
