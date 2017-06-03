@@ -41,7 +41,7 @@ get_delta() {
     [ -z "$nexV" ] && echo "warn: possibly no new versions" && exit 
     ## download delta
     fetch_artifact ${repo}:${nexV} delta.tar $PWD
-    if [ $? = 0 ]; then
+    if [ $? != 0 ]; then
         echo "error: failed downloading the new delta."
         exit 1
     fi
