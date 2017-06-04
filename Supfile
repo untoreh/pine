@@ -3,6 +3,7 @@ version: 0.4
 
 ## variables can't have names that start exactly like a network name
 env:
+  OVZ: $(ostree admin status | grep -q ovz && echo 1 || echo 0)
   NETWORK: woods
   XFS_OPTS: rw,noatime,nodiratime,largeio,inode64,nobarrier,logbufs=8,logbsize=256k
   cluslist: /etc/cluster
@@ -12,6 +13,7 @@ env:
   pinerepo: untoreh/pine
   trubrepo: untoreh/trub
   trubartifact: /trub.tar
+  trubdeltaartifact: delta-trub.tar
 
 networks:
   local:
@@ -296,13 +298,18 @@ commands:
   ostree-apps:
     desc: mount an overlay over ostree to install packages based on ostree
     run: |
-      mkdir -p /var/lib/apps ; cd /var/lib/apps ; mkdir -p work upper repo
-      mountpoint -q repo && umount repo
-      mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none repo
+      if [ $OVZ = 1 ]; then
+        mkdir -p /var/lib/apps
+        ln -s /ostree/repo /var/lib/apps/repo
+      else
+        mkdir -p /var/lib/apps ; cd /var/lib/apps ; mkdir -p work upper repo
+        mountpoint -q repo && umount repo
+        mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none repo
+      fi
   ostree-trub:
     desc: fetch trub base delta
     run: |
-      ostree="ostree --repo=/var/lib/apps/repo"
+      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
       trubdir="/var/tmp/sup/trub"
       mkdir -p $trubdir && cd $trubdir
       fetch_artifact $trubrepo $trubartifact $trubdir
@@ -311,7 +318,18 @@ commands:
       $ostree refs --delete trub
       $ostree refs --create=trub $rev
       rm -rf $trubdir/*
-
+  ostree-trub-upgrade:
+    desc: upgrade trub base
+    run: |
+      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
+      trubdir="/var/tmp/sup/trub"
+      mkdir -p $trubdir && cd $trubdir
+      fetch_artifact $trubrepo $trubdeltaartifact $trubdir
+      rev=$(b64name $trubdir)
+      $ostree static-delta apply-offline $rev
+      $ostree refs --delete trub
+      $ostree refs --create=trub $rev
+      rm -rf $trubdir/*
 targets:
   ssh-bootstrap:
     - network-local-check

@@ -334,6 +334,7 @@ chmod +x etc/periodic/daily/system-upgrade
 ## GLIB
 source ../glib.pine $PWD
 source ../extras.pine
+source ../extras_common.pine
 
 ## BOOT
 flavor="virthardened"
