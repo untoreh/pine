@@ -3,6 +3,6 @@ label-id: 0x5e782951
 device: /dev/loop0
 unit: sectors
 
-/dev/loop0p1 : start=        2048, size=       65536, type=83
-/dev/loop0p2 : start=       67584, size=       65536, type=83
+/dev/loop0p1 : start=        2048, size=       81920, type=83
+/dev/loop0p2 : start=       83968, size=       49152, type=83
 /dev/loop0p3 : start=      133120, size=      915456, type=83
