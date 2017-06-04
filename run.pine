@@ -37,5 +37,5 @@ main
 EOF
 
 mkfifo foo
-grep . foo | while read line; do echo -e "\e[01;31m$line\e[0m" >&2; done &
-stdbuf -oL -eL bash main_ex 2>foo
+stdbuf -o0 -e0 -i0 grep . foo | while read line; do echo -e "\e[01;31m$line\e[0m" >&2; done &
+stdbuf -o0 -e0 -i0 bash main_ex 2>foo
