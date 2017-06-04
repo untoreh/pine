@@ -1,11 +1,13 @@
 #!/bin/sh
 source functions.pine
 
-main() {
-	## prepare
-	printc "preparing..."
-	./prepare.pine
+## prepare
+printc "preparing..."
+./prepare.pine
 
+cat <<EOF >main_ex
+source functions.pine
+main() {
 	## init the repo
 	printc "initializing the repo..."
 	./repo.pine
@@ -31,5 +33,9 @@ main() {
 		./build-update_ovz.pine
 	fi
 }
+main
+EOF
 
-rse main
+mkfifo foo
+stdbuf -o0 -e0 -i0 grep . foo | while read line; do echo -e "\e[01;31m$line\e[0m" >&2; done &
+stdbuf -o0 -e0 -i0 bash main_ex 2>foo
