@@ -1,0 +1,93 @@
+#!/bin/sh
+## this file must be sourced to operate in the correct directory
+
+## ETCD
+cat << 'EOF' >usr/bin/etcdctl
+#!/bin/sh
+
+exec docker exec -e ETCDCTL_API=${ETCDCTL_API:-3} -it $(docker ps -f name=etcd -q) etcdctl $@
+EOF
+cat << 'EOF' >etc/init.d/etcd
+#!/sbin/openrc-run
+
+## Stub service to wait for the etcd container to start
+SVCNAME="etcd container"
+
+depend() {
+    need net docker
+}
+
+start() {
+    ebegin "Waiting for $SVCNAME"
+    timeout -t 30 /bin/busybox sh -c ' \
+    until [ "`docker inspect -f {{.State.Running}} $(docker ps -q -f name=etcd)`" == "true" ]; do
+        sleep 0.5;
+    done;'
+    eend $? "$SVCNAME did not start"
+}
+EOF
+
+## REBOOT MANAGER
+## - The clearlock scripts dequeues the node from the list stored on etcd after boot
+## - the reboot command is wrapped with a script to also support reboot locking
+cat << 'EOF' >etc/init.d/clearlock
+#!/sbin/openrc-run
+
+description="Create targets for ostree deployments"
+
+depend()
+{
+        need etcd
+}
+
+start() {
+        ebegin "Clearning etcd reboot lock"
+        if [ find /sbin/reboot -type f ] ; then
+            exec /usr/bin/timeout -s2 -t900 /sbin/reboot lock clear
+        fi
+        eend $?
+}
+
+stop() {
+        return
+}
+EOF
+chmod +x etc/init.d/clearlock
+rm sbin/reboot ## remove to avoid following symlink during copy
+cp ../reboot.pine sbin/reboot
+chmod +x sbin/reboot
+
+## SUP
+## - the sup command is wrapped to use a default Supfile script located in etc/Supfile
+## for common utilities like bootstrapping an etcd cluster
+mkdir /go
+export GOPATH=/go GOROOT=/usr/lib/go
+go get -u github.com/pressly/sup/cmd/sup
+mv /go/bin/sup usr/bin/sup.bin
+cp ../Supfile etc/
+## touch hosts files to not let sup fail on local hostsless execution
+touch etc/cluster etc/leaders etc/workers
+cat << 'EOF' >usr/bin/sup
+#!/bin/bash -l
+export -f `declare -F | awk '{print $3}'`
+SUP_FILE=/etc/Supfile
+if $(echo "$@" | grep -qE "\-f\s+[^\s]+\s*") ; then
+    exec /usr/bin/sup.bin -e SUP_FILE=$SUP_FILE $@
+else
+    exec /usr/bin/sup.bin -e SUP_FILE=$SUP_FILE -f $SUP_FILE $@
+fi
+EOF
+chmod +x usr/bin/sup
+
+## ssh wrapper to load environment vars which dropbear does not support
+cat << 'EOF' >usr/bin/ssheval
+#!/bin/sh -l
+eval "$SSH_ORIGINAL_COMMAND"
+EOF
+chmod +x usr/bin/ssheval
+
+## some utility shell functions
+cp ../functions.pine etc/profile.d/func.sh
+
+## OSTree
+cp ../trees.sh usr/bin/trees && chmod +x usr/bin/trees
