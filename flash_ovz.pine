@@ -138,7 +138,7 @@ mount -t devpts -o rw,gid=5,mode=620 none /dev/pts
 /bin/busybox --install -s /bin && PATH=/bin:/bin:$PATH
 dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.[0-9]$" | head -1)
 echo -n ostree= >/tmp/.cmdline
-ostree=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0 | tee /tmp/.cmdline)
+ostree=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0 | tee -a /tmp/.cmdline)
 
 mount -o bind,private,rw $ostree $ostree
 mount -o bind,private,rw / $ostree/sysroot
