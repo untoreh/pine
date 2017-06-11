@@ -76,7 +76,7 @@ echo $img_url
 ## download and extract the image to rootfs folder for customizations
 pwd=$PWD
 mkdir $pwd/rootfs
-wget -qO- $img_url | tar xzm -C $pwd
+wget -qO- $img_url | tar xzm -C $pwd/rootfs
 
 dpl=$(ls -dt $pwd/rootfs/ostree/deploy/pine*/deploy/* | grep -E "\.[0-9]$" | head -1)
 ## setup network

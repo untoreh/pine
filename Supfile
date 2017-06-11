@@ -330,6 +330,7 @@ commands:
       $ostree refs --delete trub
       $ostree refs --create=trub $rev
       rm -rf $trubdir/*
+      $ostree admin cleanup
 targets:
   ssh-bootstrap:
     - network-local-check
