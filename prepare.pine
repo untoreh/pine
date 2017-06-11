@@ -8,12 +8,14 @@ EOF
 apk add --update-cache \
     bash \
 	wget \
+	curl \
 	git \
 	unzip \
 	xz \
 	coreutils \
 	blkid \
 	binutils \
+	findutils \
 	multipath-tools \
 	ca-certificates \
 	util-linux \
@@ -21,7 +23,7 @@ apk add --update-cache \
 	ostree \
 	grub-bios \
 	xfsprogs \
-	go musl-dev
+	go musl-dev make
 
 source ./functions.pine
 source ./glib.pine

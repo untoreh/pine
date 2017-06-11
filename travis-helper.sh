@@ -6,6 +6,7 @@ env >build.env
 
 handle_deploy() {
 	if [ "$TRAVIS_TAG" -a -f file.up ]; then
+		printc "skipping deployment because of checksum matching."
 		GIT_REMOTE=$(git remote show origin | grep -i "push.*url" \
 			| sed -r 's~.*push.*?:[ \s]+(.*?://)(.*)$~\1'$GIT_USER:$GIT_TOKEN'@\2~i')
 		git tag -d $TRAVIS_TAG

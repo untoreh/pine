@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 source functions.pine
 name=pine_ovz
 artifact="rootfs.${name}.tgz"
@@ -24,11 +24,21 @@ if [ "$?" = 1 ]; then
 fi
 
 ## delete deployments and prune before commit
-deployments=$(ostree --repo=$rootfs/ostree/repo refs | grep ostree/)
-ostree --repo=$rootfs/ostree/repo refs --delete $deployments
-ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
+deployments=$(ostree --repo=$rootfs/ostree/repo refs ostree)
+for d in $deployments; do
+	ostree --repo=$rootfs/ostree/repo refs --delete $d
+done
+cmts=$(ostree --repo=$rootfs/ostree/repo log trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
+for c in $cmts; do
+	ostree prune --repo=$rootfs/ostree/repo --delete-commit=$c
+done
+ostree admin cleanup --sysroot=$rootfs
+
 ## now commit the new tree to the previous repo in the rootfs
 rev=$(ostree --repo=$rootfs/ostree/repo commit --skip-if-unchanged -s $(date)'-build' -b $ref --tree=dir=${name}_tree)
+
+## check repo
+ostree fsck --repo=$rootfs/ostree/repo || (err "ostree repo check failed" && exit 1)
 
 ## compare checksums
 old_csum=$(fetch_artifact $artifact_repo /${name}.sum -)
