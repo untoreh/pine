@@ -42,7 +42,7 @@ alias ostree="ostree --repo=$ostrepo"
 ## ovz
 source /etc/ovz &>/dev/null
 if [ -z "$OVZ" ]; then
-	ostree admin status | grep -q ovz && \
+	$(which /usr/bin/ostree) admin status | grep -q ovz && \
 	echo OVZ=1 >/etc/ovz || \
 	echo OVZ=0 >/etc/ovz
 fi
@@ -52,7 +52,7 @@ source /etc/ovz
 
 help() {
 	cat <<-EOF
-	Example: trees ACTION APP
+	Usage: trees [ACTION] [FLAGS]... APP
 
 	Install apps through ostree deltas checkouts.
 	-b, --base  base image (alp,trub...)
@@ -83,7 +83,7 @@ install() {
 
 	## data
 	## ovz is only for the alpine base since they share with host repo
-	if [ $OVZ = 1 -a "$base" = "pine" ]; then
+	if [ $OVZ = 1 ] && [ "$base" = "pine" -o -z "$base" ]; then
 		artf="${name}_ovz.tar"
 	else
 		artf="${name}.tar"
