@@ -35,6 +35,6 @@ setcap 'cap_net_bind_service=+ep' usr/sbin/consul
 
 ## CONTAINERPILOT
 copi_repo="joyent/containerpilot"
-COPI_VERSION=$(last_version $copi_repo rc)
+COPI_VERSION=$(last_version $copi_repo)
 fetch_artifact $copi_repo:$COPI_VERSION ".*.tar.gz" usr/bin
 chmod +x usr/bin/containerpilot
