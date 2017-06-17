@@ -41,6 +41,11 @@ mkdir -p imgtmp
 cd imgtmp
 fetch_artifact untoreh/pine image.pine.tgz $PWD
 
+if [ ! -f $PWD/image.pine ]; then
+	err "failed downloading previous image, terminating."
+	exit 1
+fi 
+
 lon=0
 while [ -z "$(losetup -P /dev/loop$lon $PWD/image.pine && echo true)" ]; do
 	lon=$((lon + 1))
