@@ -66,6 +66,7 @@ rev=$(ostree --repo=/upos/ostree/repo commit --skip-if-unchanged -s $(date)'-bui
 ## compare checksums
 old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
 new_csum=$(ostree --repo=/upos/ostree/repo ls trunk -Cd | awk '{print $5}')
+printc "comparing checksums $old_csum $new_csum..."
 compare_csums
 
 ## redeploy

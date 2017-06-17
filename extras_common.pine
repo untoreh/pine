@@ -60,7 +60,7 @@ chmod +x sbin/reboot
 ## SUP
 ## - the sup command is wrapped to use a default Supfile script located in etc/Supfile
 ## for common utilities like bootstrapping an etcd cluster
-mkdir /go
+mkdir -p /go
 export GOPATH=/go GOROOT=/usr/lib/go
 go get -u github.com/pressly/sup/cmd/sup
 mv /go/bin/sup usr/bin/sup.bin
