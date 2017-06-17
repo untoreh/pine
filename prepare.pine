@@ -23,7 +23,7 @@ apk add --update-cache \
 	ostree \
 	grub-bios \
 	xfsprogs \
-	go musl-dev
+	go musl-dev make
 
 source ./functions.pine
 source ./glib.pine

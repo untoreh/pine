@@ -28,6 +28,7 @@ apkc add consul consul-template
 consul_repo="hashicorp/consul"
 CONSUL_VERSION=$(last_version $consul_repo)
 consul_url="https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip"
+rm usr/sbin/consul
 fetch_artifact $consul_url usr/sbin
 chmod +x usr/sbin/consul
 setcap 'cap_net_bind_service=+ep' usr/sbin/consul
