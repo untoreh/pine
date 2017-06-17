@@ -17,7 +17,7 @@ wget https://github.com/${trees_repo}/master/${trees_repo_path_etc} -qO usr/etc/
 ## OCI RUNTIME TOOLS
 export GOPATH=/root/go GOROOT=/usr/lib/go
 oci_repo="opencontainers/runtime-tools"
-go get https://github.com/${oci_repo}
+go get github.com/${oci_repo}
 cd /root/go/src/github.com/${oci_repo}/ && make
 cd -
 mv /root/go/src/github.com/${oci_repo}/oci-runtime-tool usr/bin
