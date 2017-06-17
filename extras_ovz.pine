@@ -10,9 +10,9 @@ runc_repo="opencontainers/runc"
 RUNC_VERSION=$(last_release $runc_repo rc)
 fetch_artifact $runc_repo:$RUNC_VERSION ".*linux.*64.*" - >usr/bin/runc.bin
 chmod +x usr/bin/runc.bin
-wget https://github.com/${trees_repo}/master/${trees_repo_path_bin} -qO usr/bin/runc
+fetch_artifact https://raw.githubusercontent.com/${trees_repo}/master/${trees_repo_path_bin} - >usr/bin/runc
 chmod +x usr/bin/runc
-wget https://github.com/${trees_repo}/master/${trees_repo_path_etc} -qO usr/etc/runc.json
+fetch_artifact https://raw.githubusercontent.com/${trees_repo}/master/${trees_repo_path_etc} - >usr/etc/runc.json
 
 ## OCI RUNTIME TOOLS
 export GOPATH=/root/go GOROOT=/usr/lib/go
