@@ -3,12 +3,37 @@
 ## this file must be sourced to operate in the correct directory
 
 ## RUNC
+trees_repo="untoreh/trees"
+trees_repo_path_bin="templates/runc.sh"
+trees_repo_path_etc="templates/runc.json"
 runc_repo="opencontainers/runc"
 RUNC_VERSION=$(last_release $runc_repo rc)
-fetch_artifact $runc_repo:$RUNC_VERSION ".*linux.*64.*" - >usr/bin/runc
+fetch_artifact $runc_repo:$RUNC_VERSION ".*linux.*64.*" - >usr/bin/runc.bin
+chmod +x usr/bin/runc.bin
+wget https://github.com/${trees_repo}/master/${trees_repo_path_bin} -qO usr/bin/runc
+chmod +x usr/bin/runc
+wget https://github.com/${trees_repo}/master/${trees_repo_path_etc} -qO usr/etc/runc.json
+
+## OCI RUNTIME TOOLS
+export GOPATH=/root/go
+oci_repo="opencontainers/runtime-tools"
+go get https://github.com/${oci_repo}
+cd /root/go/src/github.com/${oci_repo}/ && make
+cd -
+mv /root/go/src/github.com/${oci_repo}/oci-runtime-tool usr/bin
+chmod +x usr/bin/oci-runtime-tool
 
 ## CONSUL
+apkc add consul consul-template
 consul_repo="hashicorp/consul"
 CONSUL_VERSION=$(last_version $consul_repo)
 consul_url="https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip"
-fetch_artifact $consul_url usr/bin
+fetch_artifact $consul_url usr/sbin
+chmod +x usr/sbin/consul
+setcap 'cap_net_bind_service=+ep' usr/sbin/consul
+
+## CONTAINERPILOT
+copi_repo="joyent/containerpilot"
+COPI_VERSION=$(last_version $copi_repo rc)
+fetch_artifact $copi_repo:$COPI_VERSION ".*.tar.gz" usr/bin
+chmod +x usr/bin/containerpilot

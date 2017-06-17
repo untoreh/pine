@@ -184,10 +184,10 @@ commands:
       mkdir -p /tmp/swarm-init
       IP=$(echo "$SUP_HOST" | sed -r 's/:[0-9]+$//')
       docker swarm init --advertise-addr=$IP | grep -Eo '.*\\$' -A 1 > /tmp/swarm-init/cmd
-      sup -f $SUP_FILE $SUP_ENV workers swarm-upload-join
+      sup -f $SUP_FILE $SUP_ENV workers swarm-join-upload
       sup -f $SUP_FILE $SUP_ENV workers swarm-join-node
     once: true
-  swarm-upload-join:
+  swarm-join-upload:
     desc: upload join command to worker nodes, because variables are troublesome
     upload:
     - src: /tmp/swarm-init
@@ -298,6 +298,7 @@ commands:
   ostree-apps:
     desc: mount an overlay over ostree to install packages based on ostree
     run: |
+      [ -e /var/lib/apps/repo ] && err "target exists." && exit 1
       if [ $OVZ = 1 ]; then
         mkdir -p /var/lib/apps
         ln -s /ostree/repo /var/lib/apps/repo
@@ -331,6 +332,54 @@ commands:
       $ostree refs --create=trub $rev
       rm -rf $trubdir/*
       $ostree admin cleanup
+  ostree-containerpilot:
+    desc: sets up a ref for containerpilot
+    run: |
+      copi_path=/usr/bin/containerpilot
+      copi_root=/var/tmp/copi
+      [ -f $copi_path ] || exit 1
+      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
+      mkdir -p $copi_root
+      cp -a $copi_path $copi_root
+      $ostree commit -b copi $copi_root
+      rm -rf $copi_root
+  consul-agent-start:
+    desc: start the consul service
+    run: | 
+      rc-update add consul default       
+      rc-service consul start
+  consul-node-config:
+    desc: configure consul node settings
+    run: |
+      cat <<EOF >/etc/consul/node.json
+      {
+        "node_name": "$NODE",
+        "advertise_addr": "$IPv4",
+        "bind_addr": "$IPv4",
+        "domain": "cluster",
+        "ports": {
+          "dns": ${DNS_PORT:-53}
+        }
+      }
+      EOF
+  consul-encrypt:
+    desc: enable consul cluster gossip encryption
+    run: |
+      enckey=$(consul keygen)
+      cat <<EOF >/etc/consul/encrypt.json
+      {
+          "encrypt": "$enckey"
+      }
+      EOF
+  consul-encrypt-upload:
+    desc: upload keys to the cluster
+    upload:
+    - src: /etc/consul/encrypt.json
+      dst: /
+  consul-join:
+    desc: joins the leaders in a consul cluster
+    local: |
+      consul join $(cat $leadlist)
 targets:
   ssh-bootstrap:
     - network-local-check
@@ -352,3 +401,10 @@ targets:
     - swarm-disband
   beegfs-bootstrap:
     - node-id-check
+  ostree-setup:
+    - ostree-apps
+    - ostree-containerpilot
+  consul-bootstrap:
+    - consul-node-config
+    - consul-encrypt
+    - consul-agent-start

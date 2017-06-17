@@ -227,7 +227,7 @@ kernel.grsecurity.chroot_restrict_nice=1
 kernel.pax.softmode=1
 EOF
 cat << EOF >etc/sysctl.d/02-tweaks.conf
-## ovz specific
+## ovz specific (some are not allowed anyway like swappiness)
 vm.swappiness=100
 vm.vfs_cache_pressure=0
 vm.min_free_kbytes=0

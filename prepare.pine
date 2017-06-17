@@ -8,12 +8,14 @@ EOF
 apk add --update-cache \
     bash \
 	wget \
+	curl \
 	git \
 	unzip \
 	xz \
 	coreutils \
 	blkid \
 	binutils \
+	findutils \
 	multipath-tools \
 	ca-certificates \
 	util-linux \

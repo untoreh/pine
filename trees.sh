@@ -52,7 +52,7 @@ source /etc/ovz
 
 help() {
 	cat <<-EOF
-	Usage: trees [ACTION] [FLAGS]... APP
+	Usage: trees APP [FLAGS]...
 
 	Install apps through ostree deltas checkouts.
 	-b, --base  base image (alp,trub...)
@@ -68,7 +68,7 @@ delete() {
 	rm -rf --one-file-system $ostrepo/$name
 	ostree refs --delete $name
 	ostree prune --refs-only
-	ostree admin cleanup
+	/usr/bin/ostree admin cleanup
 }
 
 install() {
@@ -98,7 +98,9 @@ install() {
 	ostree refs --create=$name $rev
 
 	## deploy
-	ostree checkout -H $name $ostrepo/$name
+	mkdir -p $ostrepo/$name
+	ostree checkout -H $name $ostrepo/$name/rootfs
+	ostree checkout -H --union $copi $ostrepo/$name/rootfs
 }
 
 eval $action
