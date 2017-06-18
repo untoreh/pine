@@ -211,9 +211,7 @@ commands:
       docker swarm leave
   beegfs-leader-setup:
     desc: |
-      docker node engine labels are required to be present for beegfs setup to work.
-      Leader hosts mgmtd and meta services ftm.
-      "originalNodeID" file must be removed cause containers.
+      docker node engine labels are required to be present for beegfs setup to work. Leader hosts mgmtd and meta services ftm. "originalNodeID" file must be removed cause containers.
     local: |
       sup -f $SUP_FILE -e SUP_NETWORK_CHECK=$SUP_NETWORK local network-leader-check
       mkdir -p /srv/beegfs/etc
@@ -355,6 +353,7 @@ commands:
       {
         "node_name": "$NODE",
         "advertise_addr": "$IPv4",
+        "client_addr": "$IPv4",
         "bind_addr": "$IPv4",
         "domain": "cluster",
         "ports": {
