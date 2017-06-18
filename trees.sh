@@ -6,19 +6,15 @@ while [[ $# -gt 0 ]]; do
 	case $key in
 		-b | --base)
 			base="$2"
-			shift
 			;;
 		-n | --name)
 			name="$2"
-			shift
 			;;
 		-f | --force)
 			clob=1
-			shift
 			;;
 		-d | --delete)
 			action=delete
-			shift
 			;;
 		-h | --help | -* | --*)
 			action=help
@@ -65,6 +61,7 @@ help() {
 }
 
 delete() {
+	[ -z "$name" ] && exit 1
 	rm -rf --one-file-system $ostrepo/$name
 	ostree refs --delete $name
 	ostree prune --refs-only
