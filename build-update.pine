@@ -62,7 +62,7 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=/upos/ostree/repo refs | grep ostree/)
 ostree --repo=/upos/ostree/repo refs --delete $deployments
-ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="3 months ago"
+ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="1 seconds ago"
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
@@ -84,7 +84,7 @@ ostree admin deploy --sysroot=/upos --os=pine trunk \
 	--karg=rootflags=rw,noatime,nodiratime,largeio,inode64,nobarrier
 
 ## prune older commits
-ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="3 months ago"
+ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="1 seconds ago"
 
 ## recreate boot files
 dpl=$(ls -dt /upos/ostree/deploy/pine/deploy/* | grep -E "\.[0-9]$" | head -1)
