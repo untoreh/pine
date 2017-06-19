@@ -63,6 +63,7 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 deployments=$(ostree --repo=/upos/ostree/repo refs | grep ostree/)
 ostree --repo=/upos/ostree/repo refs --delete $deployments
 ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="1 seconds ago"
+ostree admin cleanup --sysroot=/upos
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
