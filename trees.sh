@@ -87,17 +87,16 @@ install() {
 	fi
 	fetch_artifact ${appsrepo}:${name} $artf $workdir
 	rev=$(b64name $workdir)
-	[ -z "$rev" ] && echo "error: app not found..." && exit 1
+	[ -z "$rev" ] && err "error: app not found..." && exit 1
 
 	## install
 	applied=$(ostree static-delta apply-offline $rev && echo true || echo false)
-	! $applied && echo "error: troubles applying the delta..." && exit 1
+	! $applied && err "error: troubles applying the delta..." && exit 1
 	ostree refs --create=$name $rev
 
 	## deploy
 	mkdir -p $ostrepo/$name
 	ostree checkout -H $name $ostrepo/$name/rootfs
-	ostree checkout -H --union $copi $ostrepo/$name/rootfs
 }
 
 eval $action
