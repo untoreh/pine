@@ -27,6 +27,12 @@ fi
 deployments=$(ostree --repo=$rootfs/ostree/repo refs | grep ostree/)
 ostree --repo=$rootfs/ostree/repo refs --delete $deployments
 ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
+ostree admin cleanup --sysroot=$rootfs
+cmts=$(ostree --repo=$rootfs/ostree/repo log trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
+for c in $cmts; do
+	ostree prune --repo=$rootfs/ostree/repo --delete-commit=$c
+done
+
 ## now commit the new tree to the previous repo in the rootfs
 rev=$(ostree --repo=$rootfs/ostree/repo commit --skip-if-unchanged -s $(date)'-build' -b $ref --tree=dir=${name}_tree)
 
