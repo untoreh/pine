@@ -317,6 +317,12 @@ commands:
       $ostree refs --delete trub
       $ostree refs --create=trub $rev
       rm -rf $trubdir/*
+  ostree-trub-co:
+    desc: checkout and echo a trub rootfs
+    run: |
+      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
+      ostree checkout -H --union trub /var/lib/apps/repo/trub && \
+      echo /var/lib/apps/repo/trub
   ostree-trub-upgrade:
     desc: upgrade trub base
     run: |
