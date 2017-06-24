@@ -37,6 +37,9 @@ ostree admin cleanup --sysroot=$rootfs
 ## now commit the new tree to the previous repo in the rootfs
 rev=$(ostree --repo=$rootfs/ostree/repo commit --skip-if-unchanged -s $(date)'-build' -b $ref --tree=dir=${name}_tree)
 
+## check repo
+ostree fsck --repo=$rootfs/ostree/repo || (err "ostree repo check failed" && exit 1)
+
 ## compare checksums
 old_csum=$(fetch_artifact $artifact_repo /${name}.sum -)
 new_csum=$(ostree --repo=$rootfs/ostree/repo ls $ref -Cd | awk '{print $5}')
