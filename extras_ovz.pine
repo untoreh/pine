@@ -18,8 +18,9 @@ fetch_artifact https://raw.githubusercontent.com/${trees_repo}/master/${trees_re
 export GOPATH=/root/go GOROOT=/usr/lib/go
 oci_repo="opencontainers/runtime-tools"
 go get github.com/${oci_repo}
+ppwd=$PWD
 cd /root/go/src/github.com/${oci_repo}/ && make
-cd -
+cd $ppwd
 mv /root/go/src/github.com/${oci_repo}/oci-runtime-tool usr/bin
 chmod +x usr/bin/oci-runtime-tool
 
