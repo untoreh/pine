@@ -25,8 +25,9 @@ fi
 
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=$rootfs/ostree/repo refs | grep ostree/)
-ostree --repo=$rootfs/ostree/repo refs --delete $deployments
-ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
+for d in $deployments; do
+	ostree --repo=$rootfs/ostree/repo refs --delete $d
+done
 ostree admin cleanup --sysroot=$rootfs
 cmts=$(ostree --repo=$rootfs/ostree/repo log trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
 for c in $cmts; do

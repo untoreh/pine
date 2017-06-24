@@ -61,7 +61,9 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=/upos/ostree/repo refs | grep ostree/)
-ostree --repo=/upos/ostree/repo refs --delete $deployments
+for d in $deployments; do
+	ostree --repo=/upos/ostree/repo refs --delete $d
+done
 ostree admin cleanup --sysroot=/upos
 cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
 for c in $cmts; do
