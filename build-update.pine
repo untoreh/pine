@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 source functions.pine
 name=pine
 
@@ -60,13 +60,15 @@ mkdir -p /upos/boot
 mount -o nouuid /dev/loop${lon}p1 /upos/boot
 
 ## delete deployments and prune before commit
-deployments=$(ostree --repo=/upos/ostree/repo refs | grep ostree/)
-ostree --repo=/upos/ostree/repo refs --delete $deployments
-ostree admin cleanup --sysroot=/upos ## this will reset one deployment
+deployments=$(ostree --repo=/upos/ostree/repo refs ostree)
+for d in $deployments; do
+	ostree --repo=/upos/ostree/repo refs --delete $d
+done
 cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
 for c in $cmts; do
-	ostree prune --repo=/upos/ostree/repo --delete-commit=$c 2>/dev/null
+	ostree prune --repo=/upos/ostree/repo --delete-commit=$c
 done
+ostree admin cleanup --sysroot=/upos
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
