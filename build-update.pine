@@ -62,10 +62,10 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=/upos/ostree/repo refs | grep ostree/)
 ostree --repo=/upos/ostree/repo refs --delete $deployments
-ostree admin cleanup --sysroot=/upos
+ostree admin cleanup --sysroot=/upos ## this will reset one deployment
 cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
 for c in $cmts; do
-	ostree prune --repo=/upos/ostree/repo --delete-commit=$c
+	ostree prune --repo=/upos/ostree/repo --delete-commit=$c 2>/dev/null
 done
 
 ## now commit the new tree to the old repo
