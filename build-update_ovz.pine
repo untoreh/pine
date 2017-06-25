@@ -57,5 +57,5 @@ ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 month
 ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/" 
 tar cf ${delta}.tar $rev
 
-## checksum and compress
-tar czf ${rootfs}.${name}.tgz -C $rootfs .
+## squash image (defaults gzip 128k bs)
+mksquashfs $rootfs ${rootfs}.${name}.sq
