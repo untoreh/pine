@@ -19,7 +19,7 @@ deploy:
   file_glob: true
   file:
     - "image.pine.tgz"
-    - "rootfs.pine_ovz.tgz"
+    - "rootfs.pine_ovz.sq"
     - "delta*.tar"
     - "pine.sum"
     - "pine_ovz.sum"

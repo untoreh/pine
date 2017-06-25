@@ -69,19 +69,7 @@ stop() {
 EOF
 chmod +x etc/init.d/vardirs
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-cat <<'EOF' > etc/init.d/knobs
-=======
-cat <<EOF > etc/init.d/knobs
->>>>>>> d53bb0f... .
-=======
-cat <<'EOF' > etc/init.d/knobs
->>>>>>> 7735df6... .
-=======
 cat << 'EOF' >etc/init.d/knobs
->>>>>>> eb17261... fixed symlinks build error
 #!/sbin/openrc-run
 
 description="Knobs customizations"
@@ -198,20 +186,8 @@ iface eth0 inet dhcp
 EOF
 
 ## tunings
-<<<<<<< HEAD
-<<<<<<< HEAD
 mkdir -p etc/sysctl.d
-=======
-mkdir -p /etc/sysctl.d
->>>>>>> d53bb0f... .
-=======
-mkdir -p etc/sysctl.d
-<<<<<<< HEAD
->>>>>>> 19ae522... .
-cat <<EOF > etc/sysctl.d/01-grsec.conf
-=======
 cat << EOF >etc/sysctl.d/01-grsec.conf
->>>>>>> eb17261... fixed symlinks build error
 kernel.grsecurity.chroot_deny_fchdir=1
 kernel.grsecurity.chroot_deny_shmat=1
 kernel.grsecurity.chroot_deny_sysctl=1
@@ -230,7 +206,6 @@ kernel.pax.softmode=1
 EOF
 cat << EOF >etc/sysctl.d/02-tweaks.conf
 ## mem
-<<<<<<< HEAD
 vm.swappiness=10
 vm.vfs_cache_pressure=40
 vm.dirty_background_ratio=4
@@ -286,51 +261,7 @@ kernel.sem=256 32000 100 142
 kernel.shmmni=4096
 EOF
 mkdir -p etc/security/limits.d
-<<<<<<< HEAD
-cat <<EOF > etc/security/limits.d/files.conf
-=======
-vm.swappiness=10 
-vm.vfs_cache_pressure=40 
-vm.dirty_background_ratio=4 
-vm.dirty_ratio=80 
-vm.overcommit_memory=1 
-vm.overcommit_ratio=100 
-vm.min_free_kbytes=65536 
-kernel.pid_max=4194303 
-fs.file-max=6544018
-
-## net
-net.core.rmem_max=1677721600 
-net.core.rmem_default=167772160 
-net.core.wmem_max=1677721600 
-net.core.wmem_default=167772160 
-net.core.netdev_max_backlog=30000 
-net.core.somaxconn=16384 
-net.core.optmem_max=2048000 
-net.ipv4.tcp_mem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_rmem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_wmem=" 1024000 8738000 1677721600" 
-net.ipv4.udp_mem=" 1024000 8738000 1677721600" 
-net.ipv4.tcp_congestion_control=htcp 
-net.ipv4.tcp_window_scaling=1 
-net.ipv4.tcp_sack=0 
-net.ipv4.tcp_dsack=0 
-net.ipv4.tcp_timestamps=0 
-net.ipv4.tcp_early_retrans=1 
-net.ipv4.tcp_app_win=40 
-net.ipv4.tcp_syncookies=1 
-net.ipv4.tcp_no_metrics_save=1
-EOF
-<<<<<<< HEAD
-cat <<EOF | sudo tee etc/security/limits.d/files.conf
->>>>>>> d53bb0f... .
-=======
-mkdir -p etc/security/limits.d
-cat <<EOF > etc/security/limits.d/files.conf
->>>>>>> 5ca453e... .
-=======
 cat << EOF >etc/security/limits.d/files.conf
->>>>>>> eb17261... fixed symlinks build error
 *         hard    nofile      917504
 *         soft    nofile      917504
 root      hard    nofile      917504

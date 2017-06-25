@@ -2,7 +2,7 @@
 source functions.pine
 
 cd /srv
-sysroot=/rootfs
+sysroot=rootfs
 delta="delta_ovz"
 os_name=pine_ovz
 artifact=rootfs
@@ -18,8 +18,8 @@ ostree admin deploy --sysroot=$sysroot --os=$os_name $ref
 
 ostree fsck --repo=${sysroot}/ostree/repo
 
-## checksum and compress
-tar czf ${artifact}.${os_name}.tgz -C $sysroot .
-sha256sum ${artifact}.${os_name}.tgz
+## squash image (defaults gzip 128k bs)
+mksquashfs $sysroot ${artifact}.${os_name}.sq
+
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
 echo 1>dummy && tar cvf ${delta}.tar dummy && rm dummy
