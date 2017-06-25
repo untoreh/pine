@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 source functions.pine
 name=pine_ovz
 artifact="rootfs.${name}.sq"
@@ -13,15 +13,18 @@ if [ ! "$(find ${name}_tree/* -maxdepth 0 | wc -l)" -gt 0 ]; then
 	exit 1
 fi
 
+## deps
 install_tools ostree util-linux wget
+cp -p $PWD/utils/*squashfs /usr/bin
 
-fetch_artifact $artifact_repo $artifact $rootfs
-
+## prev image
+fetch_artifact $artifact_repo $artifact - >$artifact
 if [ "$?" = 1 ]; then
 	echo "no previous build found, creating new rootfs"
 	init/build_ovz.pine
 	exit
 fi
+unsquashfs -d $rootfs $artifact
 
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=$rootfs/ostree/repo refs ostree)
