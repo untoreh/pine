@@ -23,6 +23,7 @@ apk add --update-cache \
 	ostree \
 	grub-bios \
 	xfsprogs \
+	squashfs-tools \
 	go musl-dev make
 
 source ./functions.pine
