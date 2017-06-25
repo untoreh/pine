@@ -1,7 +1,7 @@
 #!/bin/bash -x
 source functions.pine
 name=pine_ovz
-artifact="rootfs.${name}.tgz"
+artifact="rootfs.${name}.sq"
 artifact_repo="untoreh/pine"
 delta="delta_ovz"
 rootfs=rootfs
