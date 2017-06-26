@@ -120,7 +120,7 @@ for p in $(find /* -maxdepth 0 -type d | grep -vE "flash$|dev$|sys$|proc$|run$|t
     rm -rf ${p}
 done
 
-cp -a $pwd/rootfs/* /
+mv $pwd/rootfs/* /
 dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.0$" | head -1)
 dpl_path=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
 
