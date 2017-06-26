@@ -69,7 +69,7 @@ artifact="rootfs.pine_ovz.sq"
 img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases/latest | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
 echo $img_url
 ## get unsquashfs
-wget https://cdn.rawgit.com/${rem_repo}/011d6482/utils/unsquashfs -qO /usr/bin/unsquashfs
+wget https://rawgit.com/${rem_repo}/master/utils/unsquashfs -qO /usr/bin/unsquashfs
 chmod +x /usr/bin/unsquashfs
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
@@ -78,9 +78,8 @@ chmod +x /usr/bin/unsquashfs
 
 ## download and extract the image to rootfs folder for customizations
 pwd=$PWD
-wget -qO- $img_url | unsquashfs -d $pwd/rootfs -
-mkdir $pwd/rootfs
-wget -qO- $img_url | tar xzm -C $pwd/rootfs
+wget $img_url -qO $artifact
+unsquashfs -d $pwd/rootfs $artifact
 
 dpl=$(ls -dt $pwd/rootfs/ostree/deploy/pine*/deploy/* | grep -E "\.[0-9]$" | head -1)
 ## setup network
