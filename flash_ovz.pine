@@ -115,7 +115,7 @@ set +a
 EOF
 ## overwrite the fs
 umount /etc/hostname /etc/hosts /etc/resolv.conf &>/dev/null
-for p in $(find /* -maxdepth 0 -type d | grep -vE "flash$|dev$|sys$|proc$|run$|tmp$"); do
+for p in $(find /* -maxdepth 0 -type d | grep -vE "flash$|dev$|sys$|proc$|run$|tmp$|boot$"); do
     grep ${p} /proc/mounts | cut -f2 -d" " | sort -r | xargs -I{} umount {}
     rm -rf ${p}
 done
