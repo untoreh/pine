@@ -1,10 +1,10 @@
 #!/bin/bash
 source functions.pine
 name=pine_ovz
-artifact="rootfs.${name}.sq"
 artifact_repo="untoreh/pine"
 delta="delta_ovz"
 rootfs=rootfs
+artifact="${rootfs}.${name}.sq"
 ref="trunk"
 
 ## confirm we made a new tree
@@ -61,4 +61,5 @@ ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fall
 tar cf ${delta}.tar $rev
 
 ## squash image (defaults gzip 128k bs)
-mksquashfs $rootfs ${rootfs}.${name}.sq
+rm -f $artifact
+mksquashfs $rootfs $artifact -noappend
