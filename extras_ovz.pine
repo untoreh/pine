@@ -24,6 +24,15 @@ cd $ppwd
 mv /root/go/src/github.com/${oci_repo}/oci-runtime-tool usr/bin
 chmod +x usr/bin/oci-runtime-tool
 
+## EMPTY (ttys)
+wget "https://sourceforge.net/projects/empty/files/latest/download?source=files" -qO empty.tgz
+tar xf empty.tgz
+ppwd=$PWD
+cd empty-* && make
+cp empty $ppwd/usr/bin/empty
+cd $ppwd
+chmod +x usr/bin/empty
+
 ## CONSUL
 apkc add consul consul-template
 consul_repo="hashicorp/consul"
