@@ -12,6 +12,8 @@ env:
   inventories: $cluslist $leadlist $worklist
   pinerepo: untoreh/pine
   trubrepo: untoreh/trub
+  appsrepo: /var/lib/apps/repo
+  ostree: ostree --repo=/var/lib/apps/repo
   trubartifact: /trub.tar
   trubdeltaartifact: delta-trub.tar
 
@@ -296,19 +298,20 @@ commands:
   ostree-apps:
     desc: mount an overlay over ostree to install packages based on ostree
     run: |
-      [ -e /var/lib/apps/repo ] && err "target exists." && exit 1
+      [ -e $appsrepo ] && err "target exists." && exit 1
       if [ $OVZ = 1 ]; then
-        mkdir -p /var/lib/apps
-        ln -s /ostree/repo /var/lib/apps/repo
+        mkdir -p $appsrepo
+        mount --bind /ostree/repo $appsrepo
       else
-        mkdir -p /var/lib/apps ; cd /var/lib/apps ; mkdir -p work upper repo
-        mountpoint -q repo && umount repo
-        mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none repo
+        appsrepodir=$(dirname $appsrepo)
+        appsreponame=$(basename $appsrepo)
+        mkdir -p $appsrepodir ; cd $appsrepodir ; mkdir -p work upper $appsreponame
+        mountpoint -q $appsreponame && umount $appsreponame
+        mount -t overlay -o lowerdir=/ostree/repo,workdir=work,upperdir=upper none $appsreponame
       fi
   ostree-trub:
     desc: fetch trub base delta
     run: |
-      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
       trubdir="/var/tmp/sup/trub"
       mkdir -p $trubdir && cd $trubdir
       fetch_artifact $trubrepo $trubartifact $trubdir
@@ -320,13 +323,11 @@ commands:
   ostree-trub-co:
     desc: checkout and echo a trub rootfs
     run: |
-      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
-      ostree checkout -H --union trub /var/lib/apps/repo/trub && \
-      echo /var/lib/apps/repo/trub
+      $ostree checkout -H --union trub $appsrepo/trub && \
+      echo $appsrepo/trub
   ostree-trub-upgrade:
     desc: upgrade trub base
     run: |
-      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
       trubdir="/var/tmp/sup/trub"
       mkdir -p $trubdir && cd $trubdir
       fetch_artifact $trubrepo $trubdeltaartifact $trubdir
@@ -342,7 +343,6 @@ commands:
       copi_path=/usr/bin/containerpilot
       copi_root=/var/tmp/copi
       [ -f $copi_path ] || exit 1
-      [ $OVZ = 1 ] && ostree=ostree || ostree="ostree --repo=/var/lib/apps/repo"
       mkdir -p $copi_root
       cp -a $copi_path $copi_root
       $ostree commit -b copi $copi_root

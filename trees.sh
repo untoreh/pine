@@ -19,6 +19,9 @@ while [[ $# -gt 0 ]]; do
 		-h | --help | -* | --*)
 			action=help
 			;;
+		co | checkout)
+			action=checkout
+			;;
 		*)
 			name=$key
 			;;
@@ -95,6 +98,11 @@ install() {
 	ostree refs --create=$name $rev
 
 	## deploy
+	mkdir -p $ostrepo/$name
+	ostree checkout -H $name $ostrepo/$name/rootfs
+}
+
+checkout() {
 	mkdir -p $ostrepo/$name
 	ostree checkout -H $name $ostrepo/$name/rootfs
 }
