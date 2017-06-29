@@ -308,7 +308,7 @@ apkc() {
 
 
 apkc add --initdb --update-cache alpine-base sudo tzdata  \
- binutils coreutils procps \
+ binutils coreutils procps util-linux \
  ca-certificates wget ethtool iptables  \
  ostree git  \
  htop iftop bash sysstat tmux dropbear-ssh dropbear-scp openssh-sftp-server
