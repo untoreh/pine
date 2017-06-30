@@ -2,7 +2,7 @@
 
 gem install travis
 source functions.*
-env >build.env
+env -0 | tr '\n' '\v' | tr '\0' '\n' | sed -r 's/\v/\\n/' >build.env
 
 handle_deploy() {
 	if [ "$TRAVIS_TAG" -a -f file.up ]; then
