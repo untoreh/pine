@@ -113,8 +113,6 @@ install() {
 	applied=$(ostree static-delta apply-offline $rev && echo true || echo false)
 	! $applied && err "error: troubles applying the delta..." && exit 1
 	ostree refs --create=$name $rev
-
-	ostree checkout -H $name $ostrepo/$name/rootfs
 }
 
 checkout() {
