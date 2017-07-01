@@ -121,6 +121,8 @@ for p in $(find /* -maxdepth 0 -type d | grep -vE "flash$|dev$|sys$|proc$|run$|t
 done
 
 mv $pwd/rootfs/* /
+## make sure boot files are copied for since ostree reads deployments from them
+mv $pwd/rootfs/boot/* /boot
 dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.0$" | head -1)
 dpl_path=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
 
