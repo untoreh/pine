@@ -298,7 +298,7 @@ commands:
   ostree-apps:
     desc: mount an overlay over ostree to install packages based on ostree
     run: |
-      [ -e $appsrepo ] && err "target exists." && exit 1
+      [ -e $appsrepo ] && mountpoint -q $appsrepo && err "target exists." && exit 1
       if [ $OVZ = 1 ]; then
         mkdir -p $appsrepo
         mount --bind /ostree/repo $appsrepo
