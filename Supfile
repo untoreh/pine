@@ -355,6 +355,7 @@ commands:
   consul-node-config:
     desc: configure consul node settings
     run: |
+      mkdir -p /var/consul && chown consul:consul -R /var/consul
       cat <<EOF >/etc/consul/node.json
       {
         "node_name": "$NODE",
