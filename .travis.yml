@@ -6,9 +6,6 @@ services:
 env:
 - trees_repo=untoreh/trees tag_prefix=pine
 before_script:
-- echo $PWD
-- ls $PWD
-- find $PWD -name functions.pine
 - docker run --env-file build.env -d --name pinect -v $PWD:/srv -v /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv alpine /bin/sleep 36000
 #- docker run --privileged --cap-add=ALL -v $PWD:/host ubuntu /host/beegfs.pine
 script:
