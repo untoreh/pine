@@ -1,9 +1,5 @@
-#!/bin/sh -x
-echo $PWD
-ls 
-ls $PWD
-find $PWD -name functions.pine
-source ./functions.pine
+#!/bin/sh
+source functions.pine
 
 ## prepare
 printc "preparing..."
