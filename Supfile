@@ -68,14 +68,17 @@ commands:
   ssh-pub-key:
     desc: generate ssh key
     local: |
+      mkdir -p ~/.ssh
       [ -f ~/.ssh/id_dropbear -o -f ~/.ssh/id_rsa ] && echo "ppk files present...terminating." && exit 1
       dropbearkey -t rsa -f ~/.ssh/id_dropbear &>/dev/null
-      echo 'command="/usr/bin/ssheval" '$(\
+      echo 'command="exec /usr/bin/ssheval" '$(\
       dropbearkey -y -f ~/.ssh/id_dropbear | grep "^ssh-rsa ") >> ~/.ssh/authorized_keys
-      which dropbearconvert 1>/dev/null || ( ostree admin unlock && apk add --no-cache dropbear-convert 2>/dev/null )
+      which dropbearconvert 1>/dev/null || ( ostree admin unlock 2>/dev/null ; apk add --no-cache dropbear-convert 2>/dev/null )
       dropbearconvert dropbear openssh ~/.ssh/id_dropbear ~/.ssh/id_rsa
       echo "the pub key is:"
-      cat ~/.ssh/authorized_keys | tail -1
+      cat ~/.ssh/authorized_keys | tail -1 | sed -r 's/[^ ]* ssh-rsa ([^ ]*).*/\1/'
+      echo "the private key is:"
+      cat ~/.ssh/id_rsa
   ssh-dist-key:
     desc: distribute pub key to each worker node, cause upload task does not support keyless auths...
     local: |
@@ -357,7 +360,7 @@ commands:
     run: |
       mkdir -p /var/consul && chown consul:consul -R /var/consul
       echo "CONSUL_HTTP_ADDR=http://$IPv4:8500" >> /etc/network-environment
-      echo "nameserver $IPv4" >> /etc/resolv.conf
+      echo -e "nameserver ${IPv4}\n$(cat /etc/resolv.conf)" > /etc/resolv.conf
       cat <<EOF >/etc/consul/node.json
       {
         "node_name": "$NODE",
@@ -390,7 +393,6 @@ commands:
       consul join $(cat $leadlist)
 targets:
   ssh-bootstrap:
-    - network-local-check
     - ssh-checks
     - ssh-pub-key
     - ssh-dist-key

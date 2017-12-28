@@ -1,7 +1,7 @@
-#!/bin/sh
-source functions.pine
+#!/bin/sh -x
+. ./functions.pine
 
-cat <<EOF >> /etc/apk/repositories
+cat <<EOF | tee -a /etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
