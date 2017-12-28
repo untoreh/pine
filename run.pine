@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -x
+echo $PWD
+ls 
 source functions.pine
 
 ## prepare
