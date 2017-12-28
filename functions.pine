@@ -176,7 +176,7 @@ fetch_artifact() {
         dest="$3"
         shift 3
     fi
-    [ -z "$(echo "$art_url" | grep "://")" ] && err "no url found $art_url" && return 1
+    [ -z "$(echo "$art_url" | grep "://")" ] && err "no url found for ${artf} at ${repo_fetch}:${repo_tag}" && return 1
     ## if no destination dir stream to stdo
     case "$dest" in
         "-")
