@@ -67,6 +67,10 @@ artifact="rootfs.pine_ovz.sq"
 
 ## get image url
 img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases/latest | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+## fall back to last if the latest is not available somehow
+if [ -z "$img_url" ]; then
+    img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+fi
 echo $img_url
 ## get unsquashfs
 wget https://rawgit.com/${rem_repo}/master/utils/unsquashfs -qO /usr/bin/unsquashfs
