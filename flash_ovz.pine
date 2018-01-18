@@ -83,7 +83,12 @@ chmod +x /usr/bin/unsquashfs
 ## download and extract the image to rootfs folder for customizations
 pwd=$PWD
 wget $img_url -qO $artifact
-unsquashfs -d $pwd/rootfs $artifact
+## for lowmem
+memsize=$(grep MemTotal <  /proc/meminfo | awk '{$1=$2/1024; print $1}')
+if [ "$memsize" -lt 256 ]; then
+    da="-da $((memsize / 2))"
+fi
+unsquashfs $da -d $pwd/rootfs $artifact
 
 dpl=$(ls -dt $pwd/rootfs/ostree/deploy/pine*/deploy/* | grep -E "\.[0-9]$" | head -1)
 ## setup network
