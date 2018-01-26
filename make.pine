@@ -288,15 +288,8 @@ apkc add --initdb --update-cache alpine-base sudo tzdata  \
  util-linux binutils coreutils blkid multipath-tools  \
  ca-certificates wget ethtool iptables  \
  ostree git  \
- htop iftop bash sysstat tmux dropbear-ssh dropbear-scp openssh-sftp-server
-
-## temporary fix for mosh-server
-apkc del dropbear-ssh dropbear-scp
-apkc add mosh-server
-cp -a usr/bin/mosh-server ./
-apkc del mosh-server
-apkc add dropbear-ssh dropbear-scp
-mv mosh-server usr/bin
+ htop iftop bash sysstat tmux mosh-server \
+ dropbear-ssh dropbear-scp openssh-sftp-server
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
