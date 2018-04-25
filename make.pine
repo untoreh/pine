@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source functions.pine
+. ./functions.pine
 name=pine
 ref=trunk
 
@@ -325,9 +325,9 @@ cp ../system-upgrade etc/periodic/daily
 chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
-source ../glib.pine $PWD
-source ../extras.pine
-source ../extras_common.pine
+. ../glib.pine $PWD
+. ../extras.pine
+. ../extras_common.pine
 
 ## BOOT
 flavor="virthardened"

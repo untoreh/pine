@@ -72,7 +72,7 @@ EOF
 }
 
 ## setup vars
-source /etc/network-environment
+. /etc/network-environment
 [ -z "$NODE" -o -z "$ETCDCTL_ENDPOINTS" ] && echo "error: empty NODE id or ETCDCTL_ENDPOINTS, check /etc/network-environment" && exit 1
 export ETCDCTL_API=${ETCDCTL_API:-3} ETCDCTL_ENDPOINTS
 qr=q_reboot ## key for reboot queue

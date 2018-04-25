@@ -1,5 +1,5 @@
 #!/bin/bash
-source functions.pine
+. ./functions.pine
 name=pine_ovz
 artifact_repo="untoreh/pine"
 delta="delta_ovz"

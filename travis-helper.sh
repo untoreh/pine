@@ -1,7 +1,7 @@
 #!/bin/bash
 
 gem install travis
-source functions.*
+. ./functions.*
 env -0 | tr '\n' '\v' | tr '\0' '\n' | sed -r 's/\v/\\n/' >build.env
 
 handle_deploy() {

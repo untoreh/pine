@@ -3,9 +3,13 @@
 
 cat <<EOF | tee -a /etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/edge/testing
+http://dl-cdn.alpinelinux.org/alpine/edge/community
+http://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
-apk add --update-cache \
+apk --update-cache upgrade
+
+apk add \
     bash \
 	wget \
 	curl \
@@ -24,7 +28,7 @@ apk add --update-cache \
 	grub-bios \
 	xfsprogs \
 	squashfs-tools \
-	go musl-dev make
+	go musl-dev make linux-headers
 
-source ./functions.pine
-source ./glib.pine
+. ./functions.pine
+. ./glib.pine
