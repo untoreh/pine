@@ -56,13 +56,13 @@ action=${action:-install}
 alias ostree="ostree --repo=$ostrepo"
 
 ## ovz
-source /etc/ovz &>/dev/null
+. /etc/ovz &>/dev/null
 if [ -z "$OVZ" ]; then
     $(which /usr/bin/ostree) admin status | grep -q ovz && \
     echo OVZ=1 >/etc/ovz || \
     echo OVZ=0 >/etc/ovz
 fi
-source /etc/ovz
+. /etc/ovz
 
 ## actions
 

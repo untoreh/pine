@@ -1,6 +1,6 @@
 sudo: false
 install:
-- source travis-helper.sh
+- . ./travis-helper.sh
 services:
 - docker
 env:

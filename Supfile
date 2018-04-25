@@ -35,6 +35,12 @@ commands:
     run: echo boop
   whatnode:
     run: echo $NODE
+  node-config:
+    desc: configure current node hostname and domains which should be env vars defined in /etc/network-environment
+    local: |
+      hostname "$FQN" "$IPv4" 
+      [ -n "$IPv4" ] && echo -e "$IPv4\t$FQN" >> /etc/hosts || true
+      [ -n "$IPv6" ] && echo -e "$IPv6\t$FQN" >> /etc/hosts || true
   network-local-check:
     desc: assert the current network is local
     run: |
@@ -72,22 +78,26 @@ commands:
       [ -f ~/.ssh/id_dropbear -o -f ~/.ssh/id_rsa ] && echo "ppk files present...terminating." && exit 1
       dropbearkey -t rsa -f ~/.ssh/id_dropbear &>/dev/null
       echo 'command="exec /usr/bin/ssheval" '$(\
-      dropbearkey -y -f ~/.ssh/id_dropbear | grep "^ssh-rsa ") >> ~/.ssh/authorized_keys
+      dropbearkey -y -f ~/.ssh/id_dropbear | grep -o "^ssh-rsa [^ ]*") >> ~/.ssh/authorized_keys
       which dropbearconvert 1>/dev/null || ( ostree admin unlock 2>/dev/null ; apk add --no-cache dropbear-convert 2>/dev/null )
       dropbearconvert dropbear openssh ~/.ssh/id_dropbear ~/.ssh/id_rsa
       echo "the pub key is:"
-      cat ~/.ssh/authorized_keys | tail -1 | sed -r 's/[^ ]* ssh-rsa ([^ ]*).*/\1/'
+      cat ~/.ssh/authorized_keys | tail -1 | sed -r 's/(command=".*")?[^ ]* ssh-rsa ([^ ]*).*/\2/'
       echo "the private key is:"
       cat ~/.ssh/id_rsa
   ssh-dist-key:
-    desc: distribute pub key to each worker node, cause upload task does not support keyless auths...
+    desc: distribute pub key to each node of NETWORK_LIST (defaults to /etc/workers), cause upload task does not support keyless auths...
     local: |
       SUP_NETWORK_CHECK=$SUP_NETWORK
       sup local $SUP_ENV network-local-check
       DROPBEAR_PASSWORD=${rootppp:-$DROPBEAR_PASSWORD}
-      for w in $(cat $worklist) ; do
-        w=$(echo "$w" | sed -r 's/:[0-9]+$//' )
-        scp ~/.ssh/authorized_keys $w:$HOME/.ssh/
+      for w in $(cat ${NETWORK_LIST:-$worklist}) ; do
+        echo $w
+        a=$(echo "$w" | sed -r 's/:[0-9]+$//' )
+        p=$(echo "$w" | sed -r 's/[^:]*(:([0-9]+))?/\2/')
+        [ -n "$p" ] && { Pf="-P" pf="-p"; } || { Pf= pf=; }
+        ssh $pf $p $a "mkdir -p \$HOME/.ssh"
+        scp -r $Pf $p ~/.ssh/authorized_keys $a:$HOME/.ssh/authorized_keys
       done
   ssh-dropbear-config:
     desc: dropbear daemon args
@@ -106,7 +116,7 @@ commands:
   ssh-wrap:
     desc: disable root pass logins and changes ssh port on dropbear
     run: |
-      sup -f $SUP_FILE -e PORT=$PORT $SUP_ENV cluster ssh-dropbear-config
+      sup -f $SUP_FILE -e PORT=$PORT $SUP_ENV ${NETWORK:-cluster} ssh-dropbear-config
   etcd-docker-service-create:
     desc: bootstrap a 3 hosts etcd cluster under docker
     local: |
@@ -159,7 +169,7 @@ commands:
       cat <<'EOF' > /srv/etcd/entry
       #!/bin/sh
 
-      source /etc/network-environment
+      . /etc/network-environment
 
       [ -z "$NODE" ] && echo "NODE id missing, set in /etc/network-environment" && exit
       b24=$((NODE % 255))
@@ -375,7 +385,7 @@ commands:
       EOF
   consul-encrypt:
     desc: enable consul cluster gossip encryption
-    run: |
+    local: |
       enckey=$(consul keygen)
       cat <<EOF >/etc/consul/encrypt.json
       {
@@ -390,7 +400,7 @@ commands:
   consul-join:
     desc: joins the leaders in a consul cluster
     local: |
-      consul join $(cat $leadlist)
+      consul join $(cat $leadlist | grep -oE "^[^:]*")
 targets:
   ssh-bootstrap:
     - ssh-checks
@@ -416,5 +426,7 @@ targets:
     - ostree-containerpilot
   consul-bootstrap:
     - consul-node-config
-    - consul-encrypt
     - consul-agent-start
+    - consul-encrypt
+    - consul-upload
+    - consul-join

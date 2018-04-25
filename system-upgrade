@@ -1,5 +1,5 @@
 #!/bin/sh
-source /etc/profile.d/func.sh
+. /etc/profile.d/func.sh
 
 ## recreate commit, is this part atomic?
 ## ostree refs --delete trunk

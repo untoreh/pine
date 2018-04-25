@@ -160,18 +160,27 @@ fetch_artifact() {
         dest="$2"
         shift 2
     else
-        local repo_fetch=${1/:*/} repo_tag=${1/*:/} draft= opts=
-        [ -z "$repo_tag" -o "$repo_tag" = "$1" ] && repo_tag=/latest || repo_tag=/tags/$repo_tag
-        [ "$repo_tag" = "/tags/draft" ] && repo_tag=$gh_token && draft=true
+        local repo_fetch=${1/:*} repo_tag=${1/*:} draft= opts=
+        [ -z "$repo_tag" -o "$repo_tag" = "$1" ] && repo_tag=releases/latest || repo_tag=releases/tags/${repo_tag}
+        [ "$repo_tag" = "releases/tags/last" ] && repo_tag=releases
+        [ "$repo_tag" = "releases/tags/draft" ] && repo_tag=releases/$gh_token && draft=true
         artf="$2"
         if [ -n "$draft" ]; then
-            art_url=$(wget -qO- https://api.github.com/repos/${repo_fetch}/releases${repo_tag} \
-                | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)${gh_token}
+            local data=
+            while [ -z "$data" ]; do
+                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
+                sleep 3
+            done
+            art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)${gh_token}
             trap "unset -f wget" SIGINT SIGTERM SIGKILL SIGHUP RETURN EXIT
             wget(){ /usr/bin/wget --header "Accept: application/octet-stream" $@; }
         else
-            art_url=$(wget -qO- https://api.github.com/repos/${repo_fetch}/releases${repo_tag} \
-                | grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
+            local data=
+            while [ -z "$data" ]; do
+                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
+                sleep 3
+            done
+            art_url=$(echo "$data"| grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
         fi
         dest="$3"
         shift 3
@@ -220,7 +229,7 @@ import_stage(){
     [ -z "$pkg" -o -z "$STAGE" -o -z "$1" ] && err "pkg, STAGE, or repo undefined, terminating" && exit 1
     PREV_STAGE=$((STAGE - 1))
     fetch_artifact ${1}:draft ${pkg}_stage_${PREV_STAGE}.tgz $PWD
-    source stage.env || cat stage.env | tail +2 > stage1.env && source stage1.env
+    . ./stage.env || cat stage.env | tail +2 > stage1.env && . ./stage1.env
 }
 
 ## $1 repo
@@ -482,6 +491,25 @@ usr_bind_rw() {
         mount -o bind,rw /ostree/deploy/${os}/deploy/${dpl}/usr /usr
     fi
 }
+
+usr_unlock() {
+    reqsize=$(du -s /usr/ | awk '{print $1}')
+    avltmp=$(df /tmp/ | awk 'NR != 1 {print $4}')
+    if [ "$reqsize" -lt "$avltmp" ]; then
+        tmpdir=/tmp
+    else
+        tmpdir=/var/tmp
+    fi
+    cp -a /usr "$tmpdir/.usr"
+    mount --bind "$tmpdir/.usr" /usr
+}
+
+usr_lock() {
+    touch /usr/.ro || { echo "it appears /usr is already locked."; exit 1; }
+    umount /usr || { echo "couldn't unmount the temp bind mount"; exit 1; }
+    rm -rf /tmp/.usr /var/tmp/.usr
+}
+
 ## routing to add packages over existing tree
 ## checkout the trunk using hardlinks
 #rm -rf ${ref}

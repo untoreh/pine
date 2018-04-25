@@ -81,9 +81,28 @@ chmod +x usr/bin/sup
 
 ## ssh wrapper to load environment vars which dropbear does not support
 cat << 'EOF' >usr/bin/ssheval
-#!/bin/sh -l
+#!/bin/bash -l
 
-eval "exec ${SSH_ORIGINAL_COMMAND:-exec /bin/sh -li}"
+if [ -n "$SSH_ORIGINAL_COMMAND" ]; then
+    rgx='^(([^=]*=([^[:space:]\\]*)|((\\.)+[^\\[:space:]]*))*)([[:space:]]*[^[:space:]]+)(.*)'
+    [[ "$SSH_ORIGINAL_COMMAND" =~ $rgx ]]
+    if [ -z "$(type -p ${BASH_REMATCH[6]% *})" ]; then
+        eval "$SSH_ORIGINAL_COMMAND"
+    else
+        vars=${BASH_REMATCH[1]}
+        args=${BASH_REMATCH[6]}${BASH_REMATCH[7]}
+        rgx='^[^"'\'']*;'
+        if [[ "$args" =~ $rgx ]]; then ## don't exec multi commands
+            eval "$SSH_ORIGINAL_COMMAND"
+        else
+            eval "$vars exec $args"
+        fi
+    fi
+else
+
+    exec /bin/sh -li
+fi
+
 EOF
 chmod +x usr/bin/ssheval
 
@@ -92,3 +111,57 @@ cp ../functions.pine etc/profile.d/func.sh
 
 ## OSTree
 cp ../trees.sh usr/bin/trees && chmod +x usr/bin/trees
+
+export GOPATH=/root/go GOROOT=/usr/lib/go
+
+## RUNC
+trees_repo="untoreh/trees"
+trees_repo_path_bin="templates/runc.sh"
+trees_repo_path_etc="templates/runc.json"
+runc_repo="opencontainers/runc"
+go get -d github.com/${runc_repo}
+go install github.com/${runc_repo}
+mv $GOPATH/bin/runc usr/bin/runc.bin
+chmod +x usr/bin/runc.bin
+fetch_artifact https://raw.githubusercontent.com/${trees_repo}/master/${trees_repo_path_bin} - >usr/bin/runc
+chmod +x usr/bin/runc
+fetch_artifact https://raw.githubusercontent.com/${trees_repo}/master/${trees_repo_path_etc} - >usr/etc/runc.json
+
+## OCI RUNTIME TOOLS
+oci_repo="opencontainers/runtime-tools"
+go get -d github.com/${oci_repo}
+ppwd=$PWD
+cd $GOPATH/src/github.com/${oci_repo}/ && make
+cd $ppwd
+mv /root/go/src/github.com/${oci_repo}/oci-runtime-tool usr/bin
+chmod +x usr/bin/oci-runtime-tool
+
+## EMPTY (ttys)
+wget "https://sourceforge.net/projects/empty/files/latest/download?source=files" -qO empty.tgz
+tar xf empty.tgz
+rm -f ./empty.tgz
+ppwd=$PWD
+cd empty-* && make
+cp empty $ppwd/usr/bin/empty
+cd $ppwd
+rm -rf ./empty-*
+chmod +x usr/bin/empty
+
+## CONSUL
+apkc add consul consul-template
+consul_repo="hashicorp/consul"
+CONSUL_VERSION=$(last_version $consul_repo)
+consul_url="https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip"
+rm usr/sbin/consul
+fetch_artifact $consul_url usr/sbin
+chmod +x usr/sbin/consul
+setcap 'cap_net_bind_service=+ep' usr/sbin/consul
+
+## CONTAINERPILOT
+copi_repo="joyent/containerpilot"
+trees_repo="untoreh/trees"
+trees_repo_path_copi="templates/containerpilot.json5"
+#COPI_VERSION=$(last_version $copi_repo)
+fetch_artifact "$copi_repo" ".*.tar.gz" usr/bin
+chmod +x usr/bin/containerpilot
+fetch_artifact https://raw.githubusercontent.com/${trees_repo}/master/${trees_repo_path_copi} - >usr/etc/containerpilot.json5

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source functions.pine
+. ./functions.pine
 name=pine_ovz
 ref=trunk
 
@@ -343,11 +343,11 @@ chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
 printc "installing glib..."
-source ../glib.pine $PWD
+. ../glib.pine $PWD
 printc "installing extras ovz..."
-source ../extras_ovz.pine
+. ../extras_ovz.pine
 printc "installing extras common..."
-source ../extras_common.pine
+. ../extras_common.pine
 
 ## FIXES
 rm -rf lib/rc/cache

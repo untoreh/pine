@@ -1,5 +1,5 @@
 #!/bin/bash
-source functions.pine
+. ./functions.pine
 name=pine
 
 ## confirm we made a new tree
@@ -41,10 +41,15 @@ mkdir -p imgtmp
 cd imgtmp
 fetch_artifact untoreh/pine image.pine.tgz $PWD
 
-if [ ! -f $PWD/image.pine ]; then
-	err "failed downloading previous image, terminating."
-	exit 1
-fi 
+if [ ! -f $PWD/image.pine -o "$?" != 0 ]; then
+    printc "no latest image found, trying last image available."
+    ## try the last if there is no latest
+    fetch_artifact untoreh/pine:last image.pine.tgz $PWD
+    if [ ! -f $PWD/image.pine -o "$?" != 0 ]; then
+	      err "failed downloading previous image, terminating."
+	      exit 1
+    fi
+fi
 
 lon=0
 while [ -z "$(losetup -P /dev/loop$lon $PWD/image.pine && echo true)" ]; do
@@ -114,7 +119,7 @@ chroot /upos grub-mkconfig -o /boot/${loader}/grub.cfg
 cd /upos/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
 
 ## then generate the delta and archive it
-ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/" 
+ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/"
 cd ${h}
 tar cf delta.tar $rev
 

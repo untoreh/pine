@@ -1,5 +1,5 @@
 #!/bin/bash
-source functions.pine
+. ./functions.pine
 
 cd /srv
 sysroot=rootfs
