@@ -364,12 +364,13 @@ commands:
     desc: start the consul service
     run: | 
       rc-update add consul default       
+      setcap 'cap_net_bind_service=+ep' /usr/sbin/consul
       rc-service consul start
   consul-node-config:
     desc: configure consul node settings
     run: |
       mkdir -p /var/consul && chown consul:consul -R /var/consul
-      echo "CONSUL_HTTP_ADDR=http://$IPv4:8500" >> /etc/network-environment
+      echo "CONSUL_HTTP_ADDR=http://\$IPv4:8500" >> /etc/network-environment
       echo -e "nameserver ${IPv4}\n$(cat /etc/resolv.conf)" > /etc/resolv.conf
       cat <<EOF >/etc/consul/node.json
       {
@@ -377,9 +378,11 @@ commands:
         "advertise_addr": "$IPv4",
         "client_addr": "$IPv4",
         "bind_addr": "$IPv4",
-        "domain": "cluster",
+        "domain": "cluster.${FQN}",
         "ports": {
           "dns": ${DNS_PORT:-53}
+        },
+        "recursors": [ "8.8.8.8", "8.8.4.4" ]
         }
       }
       EOF
