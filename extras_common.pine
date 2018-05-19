@@ -91,7 +91,7 @@ if [ -n "$SSH_ORIGINAL_COMMAND" ]; then
     else
         vars=${BASH_REMATCH[1]}
         args=${BASH_REMATCH[6]}${BASH_REMATCH[7]}
-        rgx='^[^"'\'']*;'
+        rgx='^[^"'\'']*;|\n'
         if [[ "$args" =~ $rgx ]]; then ## don't exec multi commands
             eval "$SSH_ORIGINAL_COMMAND"
         else

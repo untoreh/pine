@@ -375,6 +375,7 @@ commands:
       cat <<EOF >/etc/consul/node.json
       {
         "node_name": "$NODE",
+        "datacenter": "${DC:-global}",
         "advertise_addr": "$IPv4",
         "client_addr": "$IPv4",
         "bind_addr": "$IPv4",
