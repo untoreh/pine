@@ -330,22 +330,22 @@ chmod +x etc/periodic/daily/system-upgrade
 . ../extras_common.pine
 
 ## BOOT
-flavor="virthardened"
-apkc add --no-scripts linux-virthardened
+flavor="virt"
+apkc add --no-scripts linux-$flavor
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
 chroot $PWD mkinitfs  \
  -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \
  $(basename `ls -d lib/modules/*`)
 mv boot tmpboot && mkdir boot
-cp -a tmpboot/vmlinuz-virthardened boot/
-cp -a tmpboot/initramfs-virthardened boot/
-cksum=`cat boot/vmlinuz-virthardened boot/initramfs-virthardened | sha256sum | cut -f 1 -d ' '`
-mv boot/vmlinuz-virthardened boot/vmlinuz-virthardened-${cksum}
-mv boot/initramfs-virthardened boot/initramfs-virthardened-${cksum}
+cp -a tmpboot/vmlinuz-$flavor boot/
+cp -a tmpboot/initramfs-$flavor boot/
+cksum=`cat boot/vmlinuz-$flavor boot/initramfs-$flavor | sha256sum | cut -f 1 -d ' '`
+mv boot/vmlinuz-$flavor boot/vmlinuz-$flavor-${cksum}
+mv boot/initramfs-$flavor boot/initramfs-$flavor -${cksum}
 rm tmpboot -rf
 
 ## KERNEL MODULES
-KVER=$(cat usr/share/kernel/virthardened/kernel.release)
+KVER=$(cat usr/share/kernel/$flavor/kernel.release)
 mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
 cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
 chpwd depmod $KVER
