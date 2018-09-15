@@ -341,7 +341,7 @@ cp -a tmpboot/vmlinuz-$flavor boot/
 cp -a tmpboot/initramfs-$flavor boot/
 cksum=`cat boot/vmlinuz-$flavor boot/initramfs-$flavor | sha256sum | cut -f 1 -d ' '`
 mv boot/vmlinuz-$flavor boot/vmlinuz-$flavor-${cksum}
-mv boot/initramfs-$flavor boot/initramfs-$flavor -${cksum}
+mv boot/initramfs-$flavor boot/initramfs-$flavor-${cksum}
 rm tmpboot -rf
 
 ## KERNEL MODULES
@@ -377,7 +377,7 @@ rm sbin -rf && ln -s usr/sbin sbin
 
 ## OSTREE
 cd /srv
-ostree --repo=pine commit -s $(date)'-build' -b ${ref} --tree=dir=${name}_tree
+ostree --repo=pine commit -s "$(date)-build" -b ${ref} --tree=dir="${name}_tree"
 ostree summary -u --repo=pine
 ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' > pine.sum
 #pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d
