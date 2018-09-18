@@ -65,14 +65,17 @@ fi
 rem_repo="untoreh/pine"
 artifact="rootfs.pine_ovz.sq"
 
-## get image url
-img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases/latest | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+## get image url if not specified
+if [ -z "$img_url" ]; then
+    img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases/latest | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+fi
 ## fall back to last if the latest is not available somehow
 if [ -z "$img_url" ]; then
     img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
 fi
 echo $img_url
 ## get unsquashfs
+echo "downloading $img_url"
 wget https://rawgit.com/${rem_repo}/master/utils/unsquashfs -qO /usr/bin/unsquashfs
 chmod +x /usr/bin/unsquashfs
 
@@ -93,8 +96,9 @@ unsquashfs $da -d $pwd/rootfs $artifact
 dpl=$(ls -dt $pwd/rootfs/ostree/deploy/pine*/deploy/* | grep -E "\.[0-9]$" | head -1)
 ## setup network
 if [ -f "./interfaces" -a -z "$IFACE" ]; then
-    awk '!seen[$0]++' ./interfaces >interfaces.cleaned
-    mv interfaces.cleaned ${dpl}/etc/network/interfaces
+    # awk '!seen[$0]++' ./interfaces >interfaces.cleaned
+    # mv interfaces.cleaned ${dpl}/etc/network/interfaces
+    mv interfaces ${dpl}/etc/network/interfaces
 else
     if [ -z "$IFACE" ]; then
         IFACE=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*|venet[0-9]*" | head -1)
@@ -129,9 +133,9 @@ for p in $(find /* -maxdepth 0 -type d | grep -vE "flash$|dev$|sys$|proc$|run$|t
     rm -rf ${p}
 done
 
-mv $pwd/rootfs/* /
+mv -f $pwd/rootfs/* /
 ## make sure boot files are copied for since ostree reads deployments from them
-mv $pwd/rootfs/boot/* /boot
+mv -f $pwd/rootfs/boot/* /boot
 dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.0$" | head -1)
 dpl_path=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0)
 
@@ -149,7 +153,7 @@ cat <<'EOF' >/bin/init
 ## for serial console
 mount -t devpts -o rw,gid=5,mode=620 none /dev/pts
 
-/bin/busybox --install -s /bin && PATH=/bin:/bin:$PATH
+/bin/busybox --install -s /bin ; PATH=/bin:/sbin:$PATH
 dpl=$(ls -t /ostree/deploy/*/deploy | grep "\.[0-9]$" | head -1)
 echo -n ostree= >/tmp/.cmdline
 ostree=$(find /ostree/deploy/*/deploy/$dpl -maxdepth 0 | tee -a /tmp/.cmdline)
@@ -166,6 +170,16 @@ sync
 exec chroot $ostree /sbin/init ostree=$ostree
 EOF
 chmod +x /bin/init
+
+## fixes for openvz7
+cat <<'EOF' >/bin/bash
+#!/bin/busybox sh
+
+exec /bin/busybox sh $@
+EOF
+chmod +x /bin/bash
+mkdir -p /etc/network
+touch /etc/network/interfaces
 
 ## cleanup
 cd /

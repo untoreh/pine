@@ -314,6 +314,12 @@ apkc add --initdb --update-cache alpine-base sudo tzdata  \
  htop iftop bash sysstat tmux mosh-server \
  dropbear-ssh dropbear-scp openssh-sftp-server \
 
+## WORKAROUNDS
+## coreutils support for bin -> usr/bin
+cd bin
+ls -l | grep \/coreutils | awk '{print $9}' | xargs -I{} ln -sf coreutils {}
+cd -
+
 ## SETUP
 chpwd() {
     chroot $PWD $@
