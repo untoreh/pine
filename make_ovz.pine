@@ -314,11 +314,7 @@ apkc add --initdb --update-cache alpine-base sudo tzdata  \
  htop iftop bash sysstat tmux mosh-server \
  dropbear-ssh dropbear-scp openssh-sftp-server \
 
-## WORKAROUNDS
-## coreutils support for bin -> usr/bin
-cd bin
-ls -l | grep \/coreutils | awk '{print $9}' | xargs -I{} ln -sf coreutils {}
-cd -
+
 
 ## SETUP
 chpwd() {
@@ -381,6 +377,12 @@ cp -a --remove-destination bin/* usr/bin
 rm bin -rf && ln -s usr/bin bin
 cp -a --remove-destination sbin/* usr/sbin
 rm sbin -rf && ln -s usr/sbin sbin
+
+## WORKAROUNDS
+## coreutils support for bin -> usr/bin
+cd bin
+ls -l | grep \/coreutils | awk '{print $9}' | xargs -I{} ln -sf coreutils {}
+cd -
 
 ## OSTREE
 cd /srv
