@@ -108,6 +108,8 @@ chmod +x usr/bin/ssheval
 
 ## some utility shell functions
 cp ../functions.pine etc/profile.d/func.sh
+## enable boot logging
+sed -r 's/#?(rc_logger=).*/\1"YES"/' -i /etc/rc.conf
 
 ## OSTree
 cp ../trees.sh usr/bin/trees && chmod +x usr/bin/trees
