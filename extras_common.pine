@@ -106,6 +106,26 @@ fi
 EOF
 chmod +x usr/bin/ssheval
 
+## iomon script: some VMs experience I/O failure, use iostat to monitor potential stalls and reboot on occasion
+cat << 'EOF' >usr/bin/iomon
+#!/bin/bash
+
+loop=${IOMON_LOOP:-30}
+device=${IOMON_DEVICE:-sda}
+count=2
+
+while :; do
+    read tps < <(awk '/'"$IOMON_DEVICE"'/{print $2}' < <(tail -f < <(iostat -d $loop $count)))
+    if [ "${tps//0}" = \. ]; then
+        echo "io stalled for device $device...issueing a reboot"
+        reboot
+    fi
+    read -t $loop
+done
+
+EOF
+chmod +x usr/bin/iomon
+
 ## some utility shell functions
 cp ../functions.pine etc/profile.d/func.sh
 ## enable boot logging
