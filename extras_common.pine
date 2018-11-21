@@ -115,7 +115,9 @@ device=${IOMON_DEVICE:-sda}
 count=2
 
 while :; do
-    read tps < <(awk '/'"$IOMON_DEVICE"'/{print $2}' < <(tail -f < <(iostat -d $loop $count)))
+    iostat=$(iostat -d $loop $count)
+    iotail=$(tail -4 <<<"$iostat")
+    tps=$(awk "/$device/"'{print $2}' <<<"$iotail")
     if [ "${tps//0}" = \. ]; then
         echo "io stalled for device $device...issueing a reboot"
         reboot
