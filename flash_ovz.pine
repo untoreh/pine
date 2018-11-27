@@ -76,7 +76,7 @@ fi
 echo $img_url
 ## get unsquashfs
 echo "downloading $img_url"
-wget https://rawgit.com/${rem_repo}/master/utils/unsquashfs -qO /usr/bin/unsquashfs
+wget https://cdn.jsdelivr.net/gh/${rem_repo}/utils/unsquashfs -qO /usr/bin/unsquashfs
 chmod +x /usr/bin/unsquashfs
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and

@@ -6,7 +6,7 @@ Alpine Linux on OSTree.
 on the on specified device.
 
 ```
-wget https://cdn.rawgit.com/untoreh/pine/master/flash.pine -qO - | sh -s -- /dev/vda
+wget https://cdn.jsdelivr.net/gh/untoreh/pine/flash.pine -qO - | sh -s -- /dev/vda
 ```
 Environment variables can be used:
 
