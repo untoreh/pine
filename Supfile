@@ -102,7 +102,7 @@ commands:
   ssh-dropbear-config:
     desc: dropbear daemon args
     run: |
-      sed -r 's/(DROPBEAR_OPTS=).*/\1"-s -p '$PORT'"/' -i /etc/conf.d/dropbear;
+      sed -r 's/(DROPBEAR_OPTS=).*/\1"-s -p '${PORT-2468}'"/' -i /etc/conf.d/dropbear;
       /sbin/rc-service dropbear restart
   ssh-hosts-port:
     desc: changes the ssh port of a list of networks (files) and restart dropbear

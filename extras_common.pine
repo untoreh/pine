@@ -119,7 +119,7 @@ while :; do
     iotail=$(tail -4 <<<"$iostat")
     tps=$(awk "/$device/"'{print $2}' <<<"$iotail")
     if [ "${tps//0}" = \. ]; then
-        echo "io stalled for device $device...issueing a reboot"
+        echo "[$(date)]: io stalled for device $device...issueing a reboot" >> /var/log/iomon.log
         reboot
     fi
     read -t $loop
