@@ -19,7 +19,18 @@ rse()
 }
 
 git_versions() {
-    git ls-remote -t git://github.com/"$1".git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//'
+    local remote tags
+    if [ "$2" = c ]; then
+        remote="$1"
+    else
+        remote="git://github.com/$1.git"
+    fi
+    tags=$(git ls-remote -t "$remote")
+    tags=$(echo "$tags" | awk '{print $2}')
+    tags=$(echo "$tags" | cut -d '/' -f 3)
+    tags=$(echo "$tags" | grep -v "\-rc")
+    tags=$(echo "$tags" | cut -d '^' -f 1)
+    echo "$tags" | sed 's/^v//'
 }
 
 pine_version() {
