@@ -41,6 +41,18 @@ commands:
       hostname "$FQN" "$IPv4"
       [ -n "$IPv4" ] && echo -e "$IPv4\t$FQN" >> /etc/hosts || true
       [ -n "$IPv6" ] && echo -e "$IPv6\t$FQN" >> /etc/hosts || true
+  optbin:
+    desc: add /opt/bin to path
+    run: |
+      sed -r 's#(:?)/opt/bin(:?)#\1#' -i /etc/profile
+      mkdir -p /etc/profile.d /opt/bin
+      echo 'PATH=/opt/bin:$PATH' > /etc/profile.d/optbin.sh
+  optalp:
+     desc: add a local alpine installation in /opt
+     run: |
+       #!/usr/bin/bash -l
+       mkdir -p /opt/alp/etc/apk /opt/alp/usr/lib/apk/db
+       apkc /opt/alp add alpine-base
   network-local-check:
     desc: assert the current network is local
     run: |

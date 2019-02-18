@@ -325,9 +325,9 @@ apkc() {
     mkdir -p ${apkrepos}
     if [ ! -f "${apkrepos}/repositories" ]; then
         cp /etc/apk/repositories ${apkrepos}
-        initdb="--initdb"
+        initdb="--initdb --no-cache"
     fi
-    apk --arch x86_64 --allow-untrusted --root ${root_path} $initdb --no-cache $@
+    apk --arch x86_64 --allow-untrusted --root ${root_path} $initdb $@
 }
 
 ## $1 ref
