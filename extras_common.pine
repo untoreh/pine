@@ -145,6 +145,29 @@ EOF
 ## enable boot logging
 sed -r 's/#?(rc_logger=).*/\1"YES"/' -i /etc/rc.conf
 
+## backup config
+mkdir -p etc/conf.d
+cat << EOF >etc/conf.d/dup
+DUP_VER=${DUP_VER:-2.1.2}
+## binary naming scheme
+DUP_OS=${DUP_OS:-duplicacy_linux_x64_}
+## binary name on disk
+DUP_ALIAS=${DUP_ALIAS:-dup}
+## base dir where duplicacy and the repo are located
+DUP_PREFIX=${DUP_PREFIX:-/opt}
+DUP_REPO=${DUP_REPO:-/opt/dup/repo}
+DUP_MAIN_REMOTE=${DUP_MAIN_REMOTE:-gcd://main}
+## CLI arguments to pass to dup eg -debug
+DUP_ARGS=${DUP_ARGS:-}
+## CLI arguments to pass to dup commands, eg -stats for backup command
+DUP_CMD_ARGS=${DUP_CMD_ARGS:-}
+DUPLICACY_GCD1_GCD_TOKEN=${DUPLICACY_GCD1_GCD_TOKEN:-/opt/dup/dist/gcd-token.json}
+DUPLICACY_GCD_TOKEN=${DUPLICACY_GCD_TOKEN:-/opt/dup/dist/gcd-token.json}
+DUPLICACY_ATTRIBUTE_THRESHOLD=${DUPLICACY_ATTRIBUTE_THRESHOLD:-1}
+STORAGE_URL=${STORAGE_URL:-'gcd://main'}
+STORAGE_NAME=${STORAGE_NAME:-gcd1}
+EOF
+
 ## OSTree
 cp ../trees.sh usr/bin/trees && chmod +x usr/bin/trees
 

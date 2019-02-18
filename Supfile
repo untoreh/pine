@@ -38,7 +38,7 @@ commands:
   node-config:
     desc: configure current node hostname and domains which should be env vars defined in /etc/network-environment
     local: |
-      hostname "$FQN" "$IPv4" 
+      hostname "$FQN" "$IPv4"
       [ -n "$IPv4" ] && echo -e "$IPv4\t$FQN" >> /etc/hosts || true
       [ -n "$IPv6" ] && echo -e "$IPv6\t$FQN" >> /etc/hosts || true
   network-local-check:
@@ -362,8 +362,8 @@ commands:
       rm -rf $copi_root
   consul-agent-start:
     desc: start the consul service
-    run: | 
-      rc-update add consul default       
+    run: |
+      rc-update add consul default
       setcap 'cap_net_bind_service=+ep' /usr/sbin/consul
       rc-service consul start
   consul-node-config:
@@ -405,6 +405,59 @@ commands:
     desc: joins the leaders in a consul cluster
     local: |
       consul join $(cat $leadlist | grep -oE "^[^:]*")
+  dup-install:
+    desc: install duplicacy in the designated prefix path
+    run: |
+      set -a; . /etc/conf.d/dup 2>/dev/null; set +a
+      [ -f "$DUP_PREFIX/$DUP_ALIAS" ] && rm -f "$DUP_PREFIX/$DUP_ALIAS"
+      mkdir -p "$DUP_PREFIX/$DUP_ALIAS" "$DUP_PREFIX/bin" "$DUP_PREFIX/$DUP_ALIAS"
+      rm -f "$DUP_PREFIX/$DUP_ALIAS/$DUP_ALIAS" "$DUP_PREFIX/bin/$DUP_ALIAS"
+      wget -q "https://github.com/gilbertchen/duplicacy/releases/download/v$DUP_VER/$DUP_OS$DUP_VER" -O "$DUP_PREFIX/$DUP_ALIAS/$DUP_ALIAS" 2>&1
+      chmod +x "$DUP_PREFIX/$DUP_ALIAS/$DUP_ALIAS" &&
+      ln -sr "$DUP_PREFIX/$DUP_ALIAS/$DUP_ALIAS" "$DUP_PREFIX/bin/$DUP_ALIAS" &&
+      echo "duplicacy install successful"
+  dup-init:
+      serial: 1
+      desc: init duplicacy repo on host
+      run: |
+        . /etc/profile
+        set -a; . /etc/conf.d/dup 2>/dev/null; set +a
+        rm -rf $DUP_REPO
+        mkdir -p $DUP_REPO && cd $DUP_REPO || exit 1
+        find / -maxdepth 1 \
+          ! -name proc \
+          ! -name sys \
+          ! -name dev \
+          ! -name run \
+          ! -name tmp \
+          ! -name \.duplicacy \
+          -exec ln -s {} . \; &>/dev/null || exit 1
+        rm -rf $DUP_REPO/.duplicacy
+        dup ${DUP_ARGS} init ${LOCA:-${SUP_HOST%:*}} ${STORAGE_URL:-$DUP_MAIN_REMOTE} || exit 1
+        ln -sr $DUP_PREFIX/$DUP_ALIAS/dist/* $DUP_REPO/.duplicacy/
+  dup-add:
+    serial: 3
+    desc: add duplicacy storage on host
+    run: |
+      . /etc/profile
+      set -a; . /etc/conf.d/dup 2>/dev/null; set +a
+      cd ${DUP_REPO}
+      dup ${DUP_ARGS} add ${STORAGE_NAME:-${STORAGE_URL/:*}} ${LOCA:-${SUP_HOST%:*}} ${STORAGE_URL:-$DUP_MAIN_REMOTE} -repository ${DUP_REPO:-$PWD} || exit 1
+  dup-dist:
+    desc: upload local tokens and filters
+    upload:
+      - src: ./dup/dist
+        dst: /opt/
+  dup-backup:
+    serial: 3
+    desc: run a duplicacy backup
+    # run: cd $DUP_REPO && dup backup -stats -threads $(nproc || cat /proc/cpuinfo | grep -c 'core id')
+    run: |
+      . /etc/profile
+      set -a; . /etc/conf.d/dup 2>/dev/null; set +a
+      cd $DUP_REPO && dup ${DUP_ARGS} backup -stats -threads 4 -storage ${STORAGE_NAME:-default} ${DUP_CMD_ARGS}
+
+
 targets:
   ssh-bootstrap:
     - ssh-checks
@@ -434,3 +487,10 @@ targets:
     - consul-encrypt
     - consul-upload
     - consul-join
+  dup-bootstrap:
+    - optbin
+    - dup-install
+    - dup-dist
+    - dup-init
+    - dup-add
+    - dup-backup
