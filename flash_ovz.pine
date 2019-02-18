@@ -165,6 +165,7 @@ mount -o rbind,rshared /dev $ostree/dev
 mount -o rbind,rshared /proc $ostree/proc
 mount -o bind,private,ro /tmp/.cmdline $ostree/proc/cmdline
 mount -o rbind,rshared /sys $ostree/sys
+mount -t tmpfs -o rw cgroup_root $ostree/sys/fs/cgroup
 sync
 
 exec chroot $ostree /sbin/init ostree=$ostree

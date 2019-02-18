@@ -136,6 +136,12 @@ chmod +x usr/bin/iomon
 
 ## some utility shell functions
 cp ../functions.pine etc/profile.d/func.sh
+## make sure core dumps are disabled
+cat << EOF >etc/profile
+ulimit -c 0
+$(</etc/profile)
+EOF
+
 ## enable boot logging
 sed -r 's/#?(rc_logger=).*/\1"YES"/' -i /etc/rc.conf
 

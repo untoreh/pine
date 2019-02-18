@@ -217,6 +217,9 @@ kernel.pid_max=4194303
 fs.file-max=6544018
 fs.nr_open=6544018
 
+## disk
+fs.suid_dumpable=0
+
 ## net
 net.core.rmem_max=1677721600
 net.core.rmem_default=167772160
@@ -262,10 +265,14 @@ kernel.shmmni=4096
 EOF
 mkdir -p etc/security/limits.d
 cat << EOF >etc/security/limits.d/files.conf
-*         hard    nofile      917504
-*         soft    nofile      917504
-root      hard    nofile      917504
-root      soft    nofile      917504
+*     hard  nofile  917504
+*     soft  nofile  917504
+root  hard  nofile  917504
+root  soft  nofile  917504
+EOF
+cat << EOF >etc/security/limits.d/core.conf
+*     hard  core    0
+root  hard  core    0
 EOF
 
 ## sudo
