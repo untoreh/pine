@@ -18,11 +18,15 @@ install_tools ostree util-linux wget
 cp -p $PWD/utils/*squashfs /usr/bin
 
 ## prev image
-fetch_artifact $artifact_repo $artifact - >$artifact
-if [ "$?" = 1 ]; then
-	echo "no previous build found, creating new rootfs"
-	init/build_ovz.pine
-	exit
+if [ ! -e "$artifact " ]; then
+    fetch_artifact $artifact_repo $artifact - >$artifact
+    if [ "$?" = 1 ]; then
+	      echo "no previous build found, creating new rootfs"
+	      init/build_ovz.pine
+	      exit
+    fi
+else
+    rm -rf $rootfs
 fi
 unsquashfs -d $rootfs $artifact
 
@@ -57,8 +61,10 @@ ostree admin deploy --sysroot=$rootfs --os=$name trunk
 ## prune older commits
 ostree prune --repo=$rootfs/ostree/repo --refs-only --keep-younger-than="3 months ago"
 ## then generate the delta and archive it
-ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/" 
+ostree --repo=$rootfs/ostree/repo static-delta generate $ref --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
 tar cf ${delta}.tar $rev
+ostree --repo=$rootfs/ostree/repo static-delta generate $ref --empty --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
+tar cf ${delta}_base.tar $rev
 
 ## squash image (defaults gzip 128k bs)
 rm -f $artifact

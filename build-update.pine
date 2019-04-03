@@ -122,6 +122,13 @@ cd /upos/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
 ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/"
 cd ${h}
 tar cf delta.tar $rev
+rm $rev
+cd -
+ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/"
+cd ${h}
+tar cf delta_base.tar $rev
+rm $rev
+
 
 ## wrap up image
 sync
