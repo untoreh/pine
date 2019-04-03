@@ -1,6 +1,7 @@
 #!/bin/bash
 . ./functions.pine
 
+rootfs=rootfs
 cd /srv
 
 rm -rf /os &>/dev/null
@@ -55,4 +56,8 @@ losetup -d /dev/loop/0 &>/dev/null
 sha256sum image.pine > image.pine.sum
 tar cvzf image.pine.tgz image.pine image.pine.sum
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
-echo 1>dummy && tar cvf delta.tar dummy && rm dummy
+# echo 1>dummy && tar cvf delta.tar dummy && rm dummy
+## generate fat delta
+rev=$(ostree --repo=$rootfs/ostree/repo rev-parse trunk)
+ostree --repo=$rootfs/ostree/repo static-delta generate trunk --empty --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
+tar cf ${delta}_base.tar $rev

@@ -2,6 +2,7 @@
 . ./functions.pine
 
 cd /srv
+rootfs=rootfs
 sysroot=rootfs
 delta="delta_ovz"
 os_name=pine_ovz
@@ -23,4 +24,7 @@ rm -f ${artifact}.${os_name}.sq
 mksquashfs $sysroot ${artifact}.${os_name}.sq
 
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
-echo 1>dummy && tar cvf ${delta}.tar dummy && rm dummy
+# echo 1>dummy && tar cvf ${delta}.tar dummy && rm dummy
+rev=$(ostree --repo=$rootfs/ostree/repo rev-parse $ref)
+ostree --repo=$rootfs/ostree/repo static-delta generate $ref --empty --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
+tar cf ${delta}_base.tar $rev
