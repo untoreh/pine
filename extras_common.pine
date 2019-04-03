@@ -183,7 +183,7 @@ copi_repo="joyent/containerpilot"
 #COPI_VERSION=$(last_version $copi_repo)
 fetch_artifact "$copi_repo" ".*.tar.gz" usr/bin
 chmod +x usr/bin/containerpilot
-cp ../containerpilot.json5 etc/containerpilot.json5
+cp ../templates/containerpilot.json5 etc/containerpilot.json5
 
 ## NETDATA
 apkc add netdata

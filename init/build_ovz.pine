@@ -19,6 +19,7 @@ ostree admin deploy --sysroot=$sysroot --os=$os_name $ref
 ostree fsck --repo=${sysroot}/ostree/repo
 
 ## squash image (defaults gzip 128k bs)
+rm -f ${artifact}.${os_name}.sq
 mksquashfs $sysroot ${artifact}.${os_name}.sq
 
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
