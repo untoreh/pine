@@ -69,6 +69,30 @@ stop() {
 EOF
 chmod +x etc/init.d/vardirs
 
+cat << 'EOF' >etc/init.d/ostree-booted
+#!/sbin/openrc-run
+
+description="Mount ostree booted flag"
+
+depend()
+{
+        need bootmisc
+}
+
+start() {
+        ebegin "creating flag"
+        touch /run/ostree-booted
+        chmod 640 /run/ostree-booted
+        mount -o bind,private,ro /run/ostree-booted /run/ostree-booted
+        eend $?
+}
+
+stop() {
+        return
+}
+EOF
+chmod +x etc/init.d/ostree-booted
+
 mkdir -p etc/local.d
 cat << EOF >etc/local.d/00-devs.start
 rm /dev/console

@@ -1,4 +1,5 @@
 /etc/runlevels/boot/bootmisc
+/etc/runlevels/boot/ostree-booted
 /etc/runlevels/boot/mtab
 /etc/runlevels/boot/hostname
 /etc/runlevels/boot/swap
