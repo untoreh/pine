@@ -383,8 +383,8 @@ printc "installing extras common..."
 . ../extras_common.pine
 
 ## FIXES
-sed -r 's/(\ssysctl\s.*-p.*)/\1 >\/dev\/null/' -i /etc/init.d/sysctl ## sysctl shutup on ovz
-sed 's/$retval/0/' -i /etc/init.d/sysctl ## sysctl shutup on ovz
+sed -r 's/(\ssysctl\s.*-p.*)/\1 >\/dev\/null/' -i etc/init.d/sysctl ## sysctl shutup on ovz
+sed 's/$retval/0/' -i etc/init.d/sysctl ## sysctl shutup on ovz
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
 touch boot/vmlinuz-0000000000000000000000000000000000000000000000000000000000000000

@@ -143,7 +143,7 @@ $(</etc/profile)
 EOF
 
 ## enable boot logging
-sed -r 's/#?(rc_logger=).*/\1"YES"/' -i /etc/rc.conf
+sed -r 's/#?(rc_logger=).*/\1"YES"/' -i etc/rc.conf
 
 ## backup config
 mkdir -p etc/conf.d
