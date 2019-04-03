@@ -1,0 +1,30 @@
+
+    consul: {
+        address: "{{ .IPv4 | default "localhost"}}:8500",
+        token: "x",
+    }
+    jobs: [{
+        name: "service",
+        restarts: "unlimited",
+        when: {
+            once: "exitSuccess",
+            source: "prestart",
+        }
+        exec: [ "/usr/bin/echo" ],
+        args: [ "-n", "ok" ],
+        port: "80",
+        health: {
+            exec: "nc -z 127.0.0.1 80",
+            interval: 10,
+            ttl: 30,
+            timeout: "10",
+        }},
+        {
+            name: "prestart",
+            exec: "/usr/bin/mkdir cache"
+        }],
+    watches: [{
+        name: "service",
+        interval: 300,
+    },]
+}
