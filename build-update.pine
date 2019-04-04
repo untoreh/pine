@@ -124,7 +124,7 @@ cd ${h}
 tar cf delta.tar $rev
 rm $rev
 cd -
-ostree --repo=/upos/ostree/repo static-delta generate trunk --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/"
+ostree --repo=/upos/ostree/repo static-delta generate trunk --empty --inline --min-fallback-size 0 --filename=${h}/${rev} | grep -vE "^\.\/"
 cd ${h}
 tar cf delta_base.tar $rev
 rm $rev

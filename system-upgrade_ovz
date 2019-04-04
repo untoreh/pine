@@ -17,7 +17,7 @@ which ostree &>/dev/null \
     || (echo "Not an ostree installation, terminating." && exit 1)
 ls /ostree/deploy | grep ovz \
     || (echo "Not an ovz deployment, terminating." && exit 1)
-rc-update show default | grep clearlock || exit 1
+# rc-update show default | grep clearlock || exit 1
 
 ## vars
 repo=untoreh/pine
