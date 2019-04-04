@@ -67,9 +67,9 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=/upos/ostree/repo refs ostree)
 for d in $deployments; do
-	ostree --repo=/upos/ostree/repo refs --delete $d
+	ostree --repo=/upos/ostree/repo refs --delete ostree/${d}
 done
-cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +2)
+cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +1)
 for c in $cmts; do
 	ostree prune --repo=/upos/ostree/repo --delete-commit=$c
 done
@@ -84,7 +84,9 @@ ostree fsck --repo=/upos/ostree/repo || (err "ostree repo check failed" && exit 
 
 ## compare checksums
 old_csum=$(fetch_artifact untoreh/pine /pine.sum -)
+[ -z "$old_csum" ] && err old_csum empty
 new_csum=$(ostree --repo=/upos/ostree/repo ls trunk -Cd | awk '{print $5}')
+[ -z "$new_csum" ] && err new_csum empty
 printc "comparing checksums $old_csum $new_csum..."
 compare_csums
 

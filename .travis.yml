@@ -1,4 +1,5 @@
 sudo: false
+if: tag IS present
 install:
 - . ./travis-helper.sh
 services:
