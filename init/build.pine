@@ -2,6 +2,7 @@
 . ./functions.pine
 
 rootfs=rootfs
+delta="delta"
 cd /srv
 
 rm -rf /os &>/dev/null
