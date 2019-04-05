@@ -43,6 +43,10 @@ cd /os/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
 ostree fsck --repo=/os/ostree/repo
 sync
 
+rev=$(ostree --repo=/os/ostree/repo rev-parse trunk)
+ostree --repo=/os/ostree/repo static-delta generate trunk --empty --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
+tar cf ${delta}_base.tar $rev
+
 while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
         findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
         cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
@@ -58,6 +62,4 @@ tar cvzf image.pine.tgz image.pine image.pine.sum
 ## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
 # echo 1>dummy && tar cvf delta.tar dummy && rm dummy
 ## generate fat delta
-rev=$(ostree --repo=$rootfs/ostree/repo rev-parse trunk)
-ostree --repo=$rootfs/ostree/repo static-delta generate trunk --empty --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
-tar cf ${delta}_base.tar $rev
+
