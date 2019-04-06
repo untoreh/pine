@@ -1,48 +1,21 @@
 #!/bin/sh
 ## this file must be sourced to operate in the correct directory
 
-## ETCD
-cat << 'EOF' >usr/bin/etcdctl
-#!/bin/sh
-
-exec docker exec -e ETCDCTL_API=${ETCDCTL_API:-3} -it $(docker ps -f name=etcd -q) etcdctl $@
-EOF
-cat << 'EOF' >etc/init.d/etcd
-#!/sbin/openrc-run
-
-## Stub service to wait for the etcd container to start
-SVCNAME="etcd container"
-
-depend() {
-    need net docker
-}
-
-start() {
-    ebegin "Waiting for $SVCNAME"
-    timeout -t 30 /bin/busybox sh -c ' \
-    until [ "`docker inspect -f {{.State.Running}} $(docker ps -q -f name=etcd)`" == "true" ]; do
-        sleep 0.5;
-    done;'
-    eend $? "$SVCNAME did not start"
-}
-EOF
-
 ## REBOOT MANAGER
-## - The clearlock scripts dequeues the node from the list stored on etcd after boot
-## - the reboot command is wrapped with a script to also support reboot locking
+## - The clearlock scripts dequeues the node from the reboot queue stored in consul
 cat << 'EOF' >etc/init.d/clearlock
 #!/sbin/openrc-run
 
-description="Create targets for ostree deployments"
+description="Delete the current host from the reboot queue"
 
 depend()
 {
-        need etcd
+        need networking
 }
 
 start() {
-        ebegin "Clearning etcd reboot lock"
-        if [ find /sbin/reboot -type f ] ; then
+        ebegin "Clearing reboot lock"
+        if find /sbin/reboot -type f ; then
             exec /usr/bin/timeout -s2 -t900 /sbin/reboot lock clear
         fi
         eend $?
@@ -55,7 +28,9 @@ EOF
 chmod +x etc/init.d/clearlock
 rm sbin/reboot ## remove to avoid following symlink during copy
 cp ../reboot.pine sbin/reboot
-chmod +x sbin/reboot
+cp ../reboot_locker sbin/
+cp ../reboot_try_queue sbin/
+chmod +x sbin/reboot sbin/reboot_locker sbin/reboot_try_queue
 
 ## SUP
 ## - the sup command is wrapped to use a default Supfile script located in etc/Supfile

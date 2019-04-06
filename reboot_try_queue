@@ -1,0 +1,10 @@
+#!/bin/sh
+
+max=$1
+queue=$(consul kv get -keys reboot/queue/ | grep -c .)
+
+if [ "$queue" -lt $max ]; then
+    consul kv put reboot/queue/$IPv4
+    ## since we queued the reboot we kill the watch for the reboot queue
+    kill $PPID
+fi

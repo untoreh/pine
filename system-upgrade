@@ -28,7 +28,7 @@ wrap_up() {
     ## prune ostree
     ostree prune --refs-only --keep-younger-than="1 months ago"
     ## finish
-    if [ $upg ]; then
+    if $upg; then
         echo -e "$curV updated to:\n$lasV -- $cmt\n@ $(date)\nrebooting..."
         reboot lock queue -d 10
     else
@@ -38,7 +38,7 @@ wrap_up() {
 
 get_delta() {
     nexV=$(next_release $repo $curV)
-    [ -z "$nexV" ] && echo "warn: possibly no new versions" && exit 
+    [ -z "$nexV" -o "$nextV" = "$curV" ] && nexV=$lasV
     ## download delta
     fetch_artifact ${repo}:${nexV} delta.tar $PWD
     if [ $? != 0 ]; then
@@ -55,22 +55,22 @@ get_commit() {
 
 apply_upgrade() {
     ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
-    upg=$(ostree admin upgrade --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true)
+    upg=$(ostree admin upgrade --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
     ## if no upgrade was done
-    if [ ! $upg ]; then
+    if ! $upg; then
         ostree static-delta apply-offline $cmt
-        upg=$(ostree admin upgrade --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true)
+        upg=$(ostree admin upgrade --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
     fi
 }
 
 ## get the current version
-curV=`cat /etc/pine`
+curV=$(</etc/pine)
 
 ## get the latest version on github
-lasV=`git ls-remote -t git://github.com/${repo}.git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k1nr -k2nr | head -1`
+lasV=$(git ls-remote -t git://github.com/${repo}.git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k1nr -k2nr | head -1)
 
 ## compare
-if [ ! $curV = $lasV ]; then
+if [ ! $curV = $lasV -o "$1" = force ]; then
     ## if tmp folder exists an update didn't end properly
     if [ -d $work ]; then
         cd $work

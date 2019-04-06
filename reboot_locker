@@ -1,0 +1,12 @@
+#!/bin/sh
+
+max=$1
+queue=$(consul kv get -keys reboot/queue/ | grep -c .)
+
+if [ "$queue" -ge $max ]; then
+    consul watch -type keyprefix -prefix reboot/queue/ reboot_try_queue $max
+    ## if the watch has ended a reboot has been queued, it is safe to reboot
+    echo -e "rebooting... @ $(date)"
+    shift
+    /bin/busybox reboot $@
+fi

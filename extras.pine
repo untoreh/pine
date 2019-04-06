@@ -11,5 +11,3 @@
 # tar xf docker.tgz
 # mv docker/docker* usr/bin/
 # rm -rf docker docker.tgz
-
-
