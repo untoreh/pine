@@ -9,4 +9,8 @@ if [ "$queue" -ge $max ]; then
     echo -e "rebooting... @ $(date)"
     shift
     /bin/busybox reboot $@
+else
+    consul kv put reboot/queue/$IPv4
+    shift
+    /bin/busybox reboot $@
 fi

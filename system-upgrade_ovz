@@ -64,11 +64,11 @@ get_commit() {
 
 apply_upgrade() {
     ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
-    upg=$(ostree admin upgrade --reboot --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
+    upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
     ## if no upgrade was done
     if ! $upg; then
         ostree static-delta apply-offline $cmt
-        upg=$(ostree admin upgrade --reboot --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
+        upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
     fi
 }
 

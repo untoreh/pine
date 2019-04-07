@@ -12,7 +12,7 @@ consul_reboot_clear(){
 consul_reboot(){
     ## get the current allowed queue length (>=1)
     max=$(consul kv get reboot/max)
-    consul lock -n $max reboot_locker $max
+    consul lock -n $max reboot reboot_locker $max
 }
 
 ## setup vars

@@ -22,3 +22,4 @@
 /etc/runlevels/default/klogd
 /etc/runlevels/default/local
 /etc/runlevels/default/localmount
+/etc/runlevels/default/clearlock

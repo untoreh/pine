@@ -15,8 +15,11 @@ depend()
 
 start() {
         ebegin "Clearing reboot lock"
+        set -a
+        . /etc/network-environment
+        set +a
         if find /sbin/reboot -type f ; then
-            exec /usr/bin/timeout -s2 -t900 /sbin/reboot lock clear
+            exec /bin/busybox timeout -s2 -t900 /sbin/reboot lock clear
         fi
         eend $?
 }
