@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 . /etc/profile.d/func.sh
 
 ## recreate commit, is this part atomic?
@@ -38,7 +38,7 @@ wrap_up() {
 
 get_delta() {
     nexV=$(next_release $repo $curV)
-    [ -z "$nexV" -o "$nextV" = "$curV" ] && nexV=$lasV
+    [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
     ## download delta
     fetch_artifact ${repo}:${nexV} delta.tar $PWD
     if [ $? != 0 ]; then
