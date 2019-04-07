@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 . /etc/profile.d/func.sh
 
 ## recreate commit, is this part atomic?
@@ -20,6 +20,7 @@ which ostree &>/dev/null || ( echo "Not an ostree installation, terminating." &&
 repo=untoreh/pine
 ref=trunk
 work=/var/tmp/pine-upgrade
+delta=delta
 
 ## funcs
 wrap_up() {
@@ -38,12 +39,15 @@ wrap_up() {
 
 get_delta() {
     nexV=$(next_release $repo $curV)
-    [ -z "$nexV" -o "$nextV" = "$curV" ] && nexV=$lasV
+    [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
     ## download delta
-    fetch_artifact ${repo}:${nexV} delta.tar $PWD
+    fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
     if [ $? != 0 ]; then
-        echo "error: failed downloading the new delta."
-        exit 1
+        fetch_artifact ${repo}:${lasV} ${delta}_base.tar $PWD
+        if [ $? != 0 ]; then
+            echo "error: failed downloading the new delta."
+            exit 1
+        fi
     fi
     get_commit
 }
