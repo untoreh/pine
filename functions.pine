@@ -319,7 +319,7 @@ umount_hw() {
 ## install alpine packages
 apkc() {
     initdb=""
-    root_path=$(realpath $1)
+    root_path=$(realpath ${1:-/opt/alp})
     apkrepos=${root_path}/etc/apk
     shift
     mkdir -p ${apkrepos}

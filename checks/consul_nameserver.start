@@ -1,0 +1,24 @@
+#!/sbin/openrc-run
+
+name=consul_nameserver
+description="Check for local nameserver IP being available"
+
+depend() {
+        need net
+}
+
+start() {
+        ebegin "Starting ${name}"
+        ns=$(head -n -2 /etc/resolv.conf)
+        if [ -n "$ns" ]; then
+            ns=${ns/nameserver }
+            . /etc/network-environment
+            if ! ip a | grep "{ns}"; then
+                clearns=$(tail -n -2 /etc/resolv.conf)
+                echo "$clearns" > /etc/resolv.conf
+            else
+                :
+            fi
+        fi
+        eend $?
+}

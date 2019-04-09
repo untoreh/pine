@@ -416,6 +416,7 @@ commands:
         }
       }
       EOF
+      rc-update add consul_nameserver boot
   consul-encrypt:
     desc: enable consul cluster gossip encryption
     local: |

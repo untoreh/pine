@@ -155,6 +155,8 @@ rm usr/sbin/consul
 fetch_artifact $consul_url usr/sbin
 chmod +x usr/sbin/consul
 setcap 'cap_net_bind_service=+ep' usr/sbin/consul
+cp ../checks/consul_nameserver etc/init.d
+chmod +x etc/init.d/consul_nameserver
 
 ## CONTAINERPILOT
 copi_repo="joyent/containerpilot"
