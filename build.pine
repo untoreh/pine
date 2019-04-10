@@ -21,7 +21,7 @@ mount /dev/loop0p1 /os/boot
 ostree admin init-fs /os
 ostree admin os-init --sysroot=/os pine
 ostree --repo=/os/ostree/repo pull-local /srv/pine trunk
-ostree admin deploy --sysroot=/os --os=pine trunk --karg=root=UUID=`blkid -s UUID -o value /dev/loop0p3` --karg=rootfstype=xfs --karg=rootflags=rw,noatime,nodiratime,largeio,inode64,nobarrier
+ostree admin deploy --sysroot=/os --os=pine trunk --karg=root=UUID=`blkid -s UUID -o value /dev/loop0p3` --karg=rootfstype=xfs --karg=rootflags=rw,noatime,nodiratime,largeio,inode64
 
 dpl=`find /os/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
 mount --bind $dpl $dpl
