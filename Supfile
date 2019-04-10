@@ -5,7 +5,7 @@ version: 0.4
 env:
   OVZ: $(ostree admin status | grep -q ovz && echo 1 || echo 0)
   NETWORK: woods
-  XFS_OPTS: rw,noatime,nodiratime,largeio,inode64,nobarrier,logbufs=8,logbsize=256k
+  XFS_OPTS: rw,noatime,nodiratime,largeio,inode64,logbufs=8,logbsize=256k
   cluslist: /etc/cluster
   leadlist: /etc/leaders
   worklist: /etc/workers
@@ -311,7 +311,7 @@ commands:
       SN=${SN:-0}
       ## dev=$(cat /etc/fstab | awk '/ \/ /{gsub(/[0-9]*/,"");print$1}') ## root partition to find main block device
       ## echo "${dev}8 /srv/beegfs/beegfs_storage${SN} xfs \
-      ## rw,noatime,nodiratime,largeio,inode64,nobarrier,\
+      ## rw,noatime,nodiratime,largeio,inode64,\
       ## logbufs=8,logbsize=256k,logdev=${dev}7 0 0" >> /etc/fstab && mount -a
 
       docker stop beegfs-config -t1 2>/dev/null ; docker rm beegfs-config 2>/dev/null

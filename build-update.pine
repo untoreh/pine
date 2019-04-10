@@ -77,6 +77,7 @@ ostree admin cleanup --sysroot=/upos
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
+ostree config --repo=/upos/ostree/repo set core.min-free-space-size 0
 rev=$(ostree --repo=/upos/ostree/repo commit --skip-if-unchanged -s $(date)'-build' -b trunk --tree=dir=${h}/${name}_tree)
 
 ## check repo
@@ -97,7 +98,7 @@ rm -rf /upos/boot/grub*
 ostree admin deploy --sysroot=/upos --os=pine trunk \
 	--karg=root=UUID=$(blkid -s UUID -o value /dev/loop${lon}p3) \
 	--karg=rootfstype=xfs \
-	--karg=rootflags=rw,noatime,nodiratime,largeio,inode64,nobarrier
+	--karg=rootflags=rw,noatime,nodiratime,largeio,inode64
 
 ## prune older commits
 ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="1 seconds ago"
