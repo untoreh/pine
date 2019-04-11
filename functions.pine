@@ -319,7 +319,7 @@ umount_hw() {
 ## install alpine packages
 apkc() {
     initdb=""
-    root_path=$(realpath ${1:-/opt/alp})
+    root_path=$(realpath ${1})
     apkrepos=${root_path}/etc/apk
     shift
     mkdir -p ${apkrepos}
@@ -327,7 +327,7 @@ apkc() {
         cp /etc/apk/repositories ${apkrepos}
         initdb="--initdb --no-cache"
     fi
-    apk --arch x86_64 --allow-untrusted --root ${root_path} $initdb $@
+    /usr/sbin/apk --arch x86_64 --allow-untrusted --root ${root_path} $initdb $@
 }
 
 ## $1 ref

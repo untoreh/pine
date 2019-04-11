@@ -393,8 +393,16 @@ commands:
     desc: start the consul service
     run: |
       rc-update add consul default
-      setcap 'cap_net_bind_service=+ep' /usr/sbin/consul
+      setcap 'cap_net_bind_service=+ep' $(which consul)
       rc-service consul start
+  consul-install:
+    desc: install consul binaries
+    local: |
+      . /etc/profile.d/func.sh
+      apk add consul consul-template
+      mkdir -p /opt/bin
+      ln -s /opt/alp/usr/sbin/consul* /opt/bin/
+      [ ! -d /etc/consul ] && cp -a /opt/alp/etc/consul /etc
   consul-node-config:
     desc: configure consul node settings
     run: |
@@ -512,6 +520,7 @@ targets:
     - ostree-apps
     - ostree-containerpilot
   consul-bootstrap:
+    - consul-install
     - consul-node-config
     - consul-agent-start
     - consul-encrypt

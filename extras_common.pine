@@ -147,14 +147,14 @@ STORAGE_NAME=${STORAGE_NAME:-gcd1}
 EOF
 
 ## CONSUL
-apkc add consul consul-template
-consul_repo="hashicorp/consul"
-CONSUL_VERSION=$(last_version $consul_repo)
-consul_url="https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip"
-rm usr/sbin/consul
-fetch_artifact $consul_url usr/sbin
-chmod +x usr/sbin/consul
-setcap 'cap_net_bind_service=+ep' usr/sbin/consul
+# apkc add consul consul-template
+# consul_repo="hashicorp/consul"
+# CONSUL_VERSION=$(last_version $consul_repo)
+# consul_url="https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip"
+# rm usr/sbin/consul
+# fetch_artifact $consul_url usr/sbin
+# chmod +x usr/sbin/consul
+# setcap 'cap_net_bind_service=+ep' usr/sbin/consul
 cp ../checks/consul_nameserver etc/init.d/consul_nameserver
 chmod +x etc/init.d/consul_nameserver
 
