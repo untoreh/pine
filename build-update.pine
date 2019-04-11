@@ -77,8 +77,11 @@ ostree admin cleanup --sysroot=/upos
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
-ostree config --repo=/upos/ostree/repo set core.min-free-space-size 0
+ostree config --repo=/upos/ostree/repo set core.min-free-space-percent 0
 rev=$(ostree --repo=/upos/ostree/repo commit --skip-if-unchanged -s $(date)'-build' -b trunk --tree=dir=${h}/${name}_tree)
+if [ "$?" != 0 ]; then
+    rev=$(ostree --repo=${h}/${name} commit --skip-if-unchanged -s $(date)'-build' -b trunk --tree=dir=${h}/${name}_tree)
+fi
 
 ## check repo
 ostree fsck --repo=/upos/ostree/repo || (err "ostree repo check failed" && exit 1)
