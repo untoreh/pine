@@ -399,10 +399,14 @@ commands:
     desc: install consul binaries
     local: |
       . /etc/profile.d/func.sh
-      apk add consul consul-template
+      apkc /opt/alp add consul consul-template
       mkdir -p /opt/bin
       ln -s /opt/alp/usr/sbin/consul* /opt/bin/
       [ ! -d /etc/consul ] && cp -a /opt/alp/etc/consul /etc
+      [ ! -f /etc/conf.d/consul ] && cp -a /opt/alp/etc/conf.d/consul /etc/conf.d
+      sed -r 's$/usr/sbin$/opt/bin$' -i /etc/init.d/consul
+      sed -r 's$consul validate$/opt/bin/consul validate$' -i /etc/init.d/consul
+      setcap 'cap_net_bind_service=+ep' $(realpath $(which consul)) 
   consul-node-config:
     desc: configure consul node settings
     run: |
