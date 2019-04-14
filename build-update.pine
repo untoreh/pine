@@ -67,12 +67,13 @@ mount -o nouuid /dev/loop${lon}p1 /upos/boot
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=/upos/ostree/repo refs ostree)
 for d in $deployments; do
-	ostree --repo=/upos/ostree/repo refs --delete ostree/${d}
+    ostree --sysroot=/upos admin undeploy ${d/*\/}
+	# ostree --repo=/upos/ostree/repo refs --delete ostree/${d}
 done
-cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +1)
-for c in $cmts; do
-	ostree prune --repo=/upos/ostree/repo --delete-commit=$c
-done
+# cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +1)
+# for c in $cmts; do
+# 	ostree prune --repo=/upos/ostree/repo --delete-commit=$c
+# done
 ostree admin cleanup --sysroot=/upos
 
 ## now commit the new tree to the old repo
@@ -95,9 +96,9 @@ printc "comparing checksums $old_csum $new_csum..."
 compare_csums
 
 ## redeploy
-## remote boot files to avoid failing the upgrade (because it triggers ostree grub
+## remove boot files to avoid failing the upgrade (because it triggers ostree grub
 ## hooks which don't work in the build environment
-rm -rf /upos/boot/grub*
+# rm -rf /upos/boot/grub*
 ostree admin deploy --sysroot=/upos --os=pine trunk \
 	--karg=root=UUID=$(blkid -s UUID -o value /dev/loop${lon}p3) \
 	--karg=rootfstype=xfs \
