@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export alpV="v3.6"
+export alpV="v3.9"
 
 case "$1" in
     -a)
@@ -30,10 +30,31 @@ fi
 mkdir -p pivot && mount -t tmpfs -o exec,size=768M tmpfs pivot
 cd pivot
 
+type apk && apk add --no-cache openssl libressl ca-certificates
+type apt && apt update && apt install openssl ca-certificates -yq
+systemctl stop systemd-timesyncd.service
+systemctl stop systemd-logind.service
+systemctl stop dbus.service
+systemctl stop snapd.service
+systemctl stop polkitd.service
+systemctl stop lvm2-lvmetad.service
+systemctl stop mdadm.service
+systemctl stop atd.service
+systemctl stop acpid.service
+systemctl stop cron.service
+systemctl stop iscsid.service
+systemctl stop systemd-user-sessions.service
+systemctl stop user@0.service
+systemctl stop accounts-daemon.service
+systemctl stop lxcfs.service
+systemctl stop vmware-tools.service
+systemctl stop systemd-journald.service
+systemctl stop systemd-udevd.service
+systemctl stop rsyslog.service
+type yum && yum install ca-certificates wget losetup
+
 ## get busybox for rebooting (not needed when we create a chroot to customize the system)
-which apk && apk add --no-cache openssl libressl ca-certificates
-which apt && apt update && apt install openssl ca-certificates -yq
-wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+/usr/bin/wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
 chmod +x busybox
 [ ! -e busybox -o ! -x busybox ] && exit 1
 mkdir bbin
@@ -43,7 +64,7 @@ export PATH=$PWD/bbin:$PATH WORK=$PWD
 
 ## generate /etc/network-environment
 IPv6=$(ip -6 addr | awk 'tolower($0) ~ /global/{gsub(/\/64/, ""); print $2; exit}')
-IPv4=$(ip -4 -o add | awk 'match($0, /(enp[0-9]*s[0-9]*)|(eth[0-9]*)/){gsub(/\/[0-9]{1,2}/,"",$4);print $4; exit}')
+IPv4=$(ip -4 -o add | awk 'match($0, /(enp[0-9]*s[0-9]*)|(eth[0-9]*)|(ens[0-9]*)/){gsub(/\/[0-9]{1,2}/,"",$4);print $4; exit}')
 echo "NODE=$NODE" > ./network-environment
 [ -n "$IPv4" ] && echo "IPv4=$IPv4" >> ./network-environment
 [ -n "$IPv6" ] && echo "IPv6=$IPv6" >> ./network-environment
@@ -71,9 +92,9 @@ fi
 
 ## setup alp-base to get tools to mount the image to customize it before flashing
 mkdir -p proc sys dev tmp run mnt etc
-apkt=`wget -cT 3 https://dl-cdn.alpinelinux.org/alpine/${alpV}/main/x86_64/ -qO- |  \
- grep -oE '"apk-tools-static.*.apk"' | sed 's/"//g'`
-wget -cT 3 "https://dl-cdn.alpinelinux.org/alpine/${alpV}/main/x86_64/$apkt" || exit 1
+apkt=`/usr/bin/wget --no-check-certificate -cT 3 https://dl-cdn.alpinelinux.org/alpine/${alpV}/main/x86_64/ -qO- |  \
+ /bin/grep -oE '"apk-tools-static.*.apk"' | sed 's/"//g'`
+/usr/bin/wget --no-check-certificate -cT 3 "https://dl-cdn.alpinelinux.org/alpine/${alpV}/main/x86_64/$apkt" || exit 1
 sync
 tar xzf $apkt
 ln -s sbin/apk.static sbin/apk
@@ -93,30 +114,32 @@ DEVICE=$1
 . ./network-environment
 
 ## get image url
-img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 ## get the last if the latest is not available somehow
 if [ -z "$img_url" ]; then
-   img_url=`wget -qO- https://api.github.com/repos/untoreh/pine/releases | grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+   img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 fi
 echo $img_url
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
 ## setup networking devices and drives
-#wget -qO- $img_url | tar xzf -O image.pine | dd of=$DEVICE bs=512 conv=notrunc,fsync
+#/usr/bin/wget -qO- $img_url | tar xzf -O image.pine | dd of=$DEVICE bs=512 conv=notrunc,fsync
 
 ## download and extract the image
-wget -qO- $img_url | tar xz
+/usr/bin/wget -q $img_url -O- | tar xz image.pine -O | dd if=/dev/stdin of=$DEVICE bs=4M conv=fsync
 ## verify checksum (included with the image archive)
-cat image.pine.sum | sha256sum -c -
 ## mount the image on loop device
-/sbin/losetup -P /dev/loop0 image.pine
 ## wait for partitions to be created
-while [ ! -e /dev/loop0p3 ] ; do /sbin/losetup -P /dev/loop0 image.pine ; sleep 1;
-done
 
 ## mount the partition of interest (3)
+lon=0
+while ! /sbin/losetup -P /dev/loop${lon} $DEVICE; do
+    lon=$((lon+1))
+    sleep 1
+done
+sync
 mkdir rootfs
-mount -t xfs -o nouuid /dev/loop0p3 rootfs/
+mount -t xfs -o nouuid /dev/loop${lon}p3 rootfs/ || exit 1
 
 dpl=`ls -dt rootfs/ostree/deploy/pine/deploy/* | grep -E "\.[0-9]$" | head -1`
 ## setup network
@@ -125,7 +148,8 @@ if [ -f "./interfaces" -a -z "$IFACE" ]; then
     mv interfaces.cleaned ${dpl}/etc/network/interfaces
 else
     if [ -z "$IFACE" ]; then
-        IFACE=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*" | head -1)
+        IFACE=$(ip -4 add | grep -Eo "enp[0-9]*s[0-9]*|eth[0-9]*|ens[0-9]*" | head -1)
+        [ -z "$IFACE" ] && exit 1
         ADDRESS=$(ip -4 addr | grep $IFACE | grep inet | sed -r 's~.*inet\s*([^ ]*).*~\1~' | head -1)
         NETMASK=$(busybox ipcalc $ADDRESS -m | cut -d= -f2) ## used from the busybox applet
         GATEWAY=$(ip -4 route | grep $IFACE | head -1 | sed -r 's/(default (via|dev) )?([^\s ]*) .*/\3/')
@@ -147,7 +171,9 @@ fi
 mv ./network-environment ${dpl}/etc/network-environment
 echo -e "set -a\n. /etc/network-environment\nset +a" > ${dpl}/etc/profile.d/network-environment.sh
 ## add node engine label to docker daemon
-sed -r 's~(DOCKER_OPTS=".*)"~\1 --label NODE='$NODE' "~' -i ${dpl}/etc/conf.d/docker
+if [ -f ${dpl}/etc/conf.d/docker ]; then
+    sed -r 's~(DOCKER_OPTS=".*)"~\1 --label NODE='$NODE' "~' -i ${dpl}/etc/conf.d/docker
+fi
 
 ## fix drive names and add new partitions
 ## if using default partitions ("/var" and "/share") replace the /var mount (5) while
@@ -156,7 +182,7 @@ sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $DEVICE)'\2#' -i ${dpl}/etc/fstab
 if [ -z "$PARTS" ] ; then
     export PARTS=5G,128M,128M DP_F=true
     ## note the number 5, the partition number, extended is 4, var is 5
-    var_line="${DEVICE}5    /var    xfs rw,noatime,nodiratime,largeio,inode64,nobarrier,logdev=${DEVICE}6,logbufs=8,logbsize=256k 0   0"
+    var_line="${DEVICE}5    /var    xfs rw,noatime,nodiratime,largeio,inode64,logdev=${DEVICE}6,logbufs=8,logbsize=256k 0   0"
     sed -r 's~/ostree.*/var.*/var.*~'"${var_line}"'~' -i ${dpl}/etc/fstab
     ## tabulate fstab
     cat ${dpl}/etc/fstab | sed -r 's/\s+/ /g' | column -t -s' ' >tmpfstab
@@ -165,13 +191,13 @@ fi
 
 ## unmount the image and flash
 umount rootfs/
-xfs_repair /dev/loop0p1
-xfs_repair /dev/loop0p3
-
-losetup -D
 sync
-dd if=image.pine of=$DEVICE bs=4M conv=fsync
-rm -f image.pine
+xfs_repair /dev/loop${lon}p1 || exit
+xfs_repair /dev/loop${lon}p3 || exit
+
+sync
+/sbin/losetup -D
+sync
 
 ## setup additional partitions, (4) is extended partition so it is skipped
 ## init extended partition
@@ -179,21 +205,22 @@ part_str='n\ne\n\n\n'
 ## add logical partitions
 IFS=,
 for p in ${PARTS} ; do
-    part_str=$part_str'n\n\n+'$p'\n'
+    part_str="${part_str}n\n\n+${p}\n"
 done
 unset IFS
 ## append last partition
 if [ "$DP_F" ] ; then
-    part_str=$part_str'n\n\n\n'
+    part_str="${part_str}n\n\n\n"
 fi
 ## write statement
-part_str=$part_str'w\n'
+part_str="${part_str}w\n"
 ## execute fdisk
-/bin/echo -e $part_str | fdisk $DEVICE
+/bin/echo -e $part_str | fdisk $DEVICE || exit
 sleep 1
+sync
 ## loop the target device to make sure partition tables are updated
 lon=0
-while [ -z "`losetup -P /dev/loop$lon $DEVICE && echo true`" ] ; do
+while ! losetup -P /dev/loop${lon} $DEVICE; do
     lon=$((lon+1))
     sleep 1
 done
@@ -213,7 +240,7 @@ mount -o nouuid,logdev=${LODEV}6 ${LODEV}5 varpart
 cp -a varostree/ostree/deploy/pine/var/* varpart/
 umount varpart varostree
 ## detach loop devices
-losetup -D
+/sbin/losetup -D
 
 ## reboot
 sync
