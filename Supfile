@@ -404,9 +404,12 @@ commands:
       ln -s /opt/alp/usr/sbin/consul* /opt/bin/
       [ ! -d /etc/consul ] && cp -a /opt/alp/etc/consul /etc
       [ ! -f /etc/conf.d/consul ] && cp -a /opt/alp/etc/conf.d/consul /etc/conf.d
+      cp -a /opt/alp/etc/init.d/consul /etc/init.d/
+      id consul || adduser -D consul
       sed -r 's$/usr/sbin$/opt/bin$' -i /etc/init.d/consul
       sed -r 's$consul validate$/opt/bin/consul validate$' -i /etc/init.d/consul
       setcap 'cap_net_bind_service=+ep' $(realpath $(which consul)) 
+      chmod +x $(realpath $(which consul)) $(realpath $(which consul-template)) 
   consul-node-config:
     desc: configure consul node settings
     run: |
@@ -424,11 +427,10 @@ commands:
         "ports": {
           "dns": ${DNS_PORT:-53}
         },
-        "recursors": [ "8.8.8.8", "8.8.4.4" ]
-        }
+        "recursors": [ "1.1.1.1", "8.8.8.8" ]
       }
       EOF
-      rc-update add consul_nameserver boot
+      # rc-update add consul_nameserver boot
   consul-encrypt:
     desc: enable consul cluster gossip encryption
     local: |
@@ -528,7 +530,6 @@ targets:
     - consul-node-config
     - consul-agent-start
     - consul-encrypt
-    - consul-upload
     - consul-join
   dup-bootstrap:
     - optbin

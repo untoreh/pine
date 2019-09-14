@@ -21,13 +21,17 @@ if [ -z "$NODE" ]; then
     exit 1
 fi
 
+## vars
+bburl=https://busybox.net/downloads/binaries/1.30.0-i686/busybox
+wget=/usr/bin/wget
+
 ## mount tmpfs
 mkdir -p /flash && cd /flash
 
 ## get busybox for rebooting (not needed when we create a chroot to customize the system)
 which apk && apk add --no-cache openssl ca-certificates
 which apt && apt update && apt install -yq openssl ca-certificates
-wget http://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+$wget --no-check-certificate $bburl -O busybox
 chmod +x busybox
 [ ! -e busybox -o ! -x busybox ] && exit 1
 mkdir bin
@@ -67,16 +71,16 @@ artifact="rootfs.pine_ovz.sq"
 
 ## get image url if not specified
 if [ -z "$img_url" ]; then
-    img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases/latest | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+    img_url=$($wget -qO- https://api.github.com/repos/${rem_repo}/releases/latest | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
 fi
 ## fall back to last if the latest is not available somehow
 if [ -z "$img_url" ]; then
-    img_url=$(wget -qO- https://api.github.com/repos/${rem_repo}/releases | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
+    img_url=$($wget -qO- https://api.github.com/repos/${rem_repo}/releases | grep browser_download_url | grep $artifact | head -n 1 | cut -d '"' -f 4)
 fi
 echo $img_url
 ## get unsquashfs
 echo "downloading $img_url"
-wget https://cdn.jsdelivr.net/gh/${rem_repo}/utils/unsquashfs -qO /usr/bin/unsquashfs
+$wget https://cdn.jsdelivr.net/gh/${rem_repo}/utils/unsquashfs -qO /usr/bin/unsquashfs
 chmod +x /usr/bin/unsquashfs
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
@@ -85,7 +89,7 @@ chmod +x /usr/bin/unsquashfs
 
 ## download and extract the image to rootfs folder for customizations
 pwd=$PWD
-wget $img_url -qO $artifact
+$wget $img_url -qO $artifact
 ## for lowmem
 memsize=$(grep MemTotal <  /proc/meminfo | awk '{$1=$2/1024; print $1}')
 if [ "$memsize" -lt 256 ]; then

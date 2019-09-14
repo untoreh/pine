@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export alpV="v3.9"
+export alpV="v3.10"
 
 case "$1" in
     -a)
@@ -241,7 +241,7 @@ cp -a varostree/ostree/deploy/pine/var/* varpart/
 umount varpart varostree
 ## detach loop devices
 /sbin/losetup -D
-
+exit
 ## reboot
 sync
 echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; sleep 1;
