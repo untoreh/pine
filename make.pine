@@ -156,7 +156,7 @@ echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 ## fstab
 cat << EOF >etc/fstab
 /dev/bd3                 /              xfs    rw,noatime,largeio,inode64                          0  0
-/dev/bd1                 /boot          xfs    rw,noexec,nodev,noatime,nodiratime,largeio,inode64  0  0
+/dev/bd1                 /boot          ext2   rw,noexec,nodev,nofail                              0  0
 /dev/bd2                 swap           swap   defaults                                            0  0
 /boot                    /sysroot/boot  none   bind                                                0  0
 /ostree/deploy/pine/var  /var           none   bind                                                0  0
