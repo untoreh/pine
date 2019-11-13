@@ -1,12 +1,6 @@
 #!/bin/sh -x
 . ./functions.pine
 
-cat <<EOF | tee -a /etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
-http://dl-cdn.alpinelinux.org/alpine/edge/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
-EOF
-
 apk --update-cache upgrade
 
 apk add \

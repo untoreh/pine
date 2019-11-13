@@ -166,4 +166,4 @@ chmod +x usr/bin/containerpilot
 cp ../templates/containerpilot.json5 etc/containerpilot.json5
 
 ## NETDATA
-apkc add netdata
+# apkc add netdata
