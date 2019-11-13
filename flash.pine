@@ -26,6 +26,8 @@ if [ -z "$NODE" ] ; then
     exit 1
 fi
 
+modprobe loop xfs || { echo "kernel modules unavailable (ensure xfs version is recent enough)"; exit 1; }
+
 ## mount tmpfs
 mkdir -p pivot && mount -t tmpfs -o exec,size=768M tmpfs pivot
 cd pivot
@@ -123,7 +125,7 @@ echo $img_url
 
 ## direct piping allows for fast flashing on low ram but can't verify checksum and
 ## setup networking devices and drives
-#/usr/bin/wget -qO- $img_url | tar xzf -O image.pine | dd of=$DEVICE bs=512 conv=notrunc,fsync
+#/usr/bin/wget -qO- $img_url | tar xzf -O image.pine | dd of=$DEVICE bs=512 conv=fsync
 
 ## download and extract the image
 /usr/bin/wget -q $img_url -O- | tar xz image.pine -O | dd if=/dev/stdin of=$DEVICE bs=4M conv=fsync
@@ -180,7 +182,7 @@ fi
 ## the "/share" device is mounted by the sharing service (docker or the chosen DFS)
 sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $DEVICE)'\2#' -i ${dpl}/etc/fstab
 if [ -z "$PARTS" ] ; then
-    export PARTS=5G,128M,128M DP_F=true
+    export PARTS=5G,128M,128M, DP_F=true
     ## note the number 5, the partition number, extended is 4, var is 5
     var_line="${DEVICE}5    /var    xfs rw,noatime,nodiratime,largeio,inode64,logdev=${DEVICE}6,logbufs=8,logbsize=256k 0   0"
     sed -r 's~/ostree.*/var.*/var.*~'"${var_line}"'~' -i ${dpl}/etc/fstab
@@ -209,13 +211,13 @@ for p in ${PARTS} ; do
 done
 unset IFS
 ## append last partition
-if [ "$DP_F" ] ; then
+if [ -n "$DP_F" ] ; then
     part_str="${part_str}n\n\n\n"
 fi
 ## write statement
 part_str="${part_str}w\n"
 ## execute fdisk
-/bin/echo -e $part_str | fdisk $DEVICE || exit
+/bin/echo -e "$part_str" | fdisk "$DEVICE" || exit
 sleep 1
 sync
 ## loop the target device to make sure partition tables are updated
