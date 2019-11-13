@@ -1,6 +1,9 @@
 #!/bin/sh -x
 . ./functions.pine
 
+## ostree workaround
+ln -s /usr/sbin/grub-mkconfig /usr/sbin/grub2-mkconfig
+
 apk --update-cache upgrade
 
 apk add \

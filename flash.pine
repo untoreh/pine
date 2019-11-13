@@ -33,7 +33,7 @@ mkdir -p pivot && mount -t tmpfs -o exec,size=768M tmpfs pivot
 cd pivot
 
 type apk && apk add --no-cache openssl libressl ca-certificates
-type apt && apt update && apt install openssl ca-certificates -yq
+type apt && { apt update ; apt install openssl ca-certificates -yq; }
 systemctl stop systemd-timesyncd.service
 systemctl stop systemd-logind.service
 systemctl stop dbus.service
@@ -181,6 +181,8 @@ fi
 ## if using default partitions ("/var" and "/share") replace the /var mount (5) while
 ## the "/share" device is mounted by the sharing service (docker or the chosen DFS)
 sed -r 's#(/dev/)bd([0-9]*)#\1'$(basename $DEVICE)'\2#' -i ${dpl}/etc/fstab
+# PARTS=1G,128M,128M,128M,
+# DP_F=true
 if [ -z "$PARTS" ] ; then
     export PARTS=5G,128M,128M, DP_F=true
     ## note the number 5, the partition number, extended is 4, var is 5
@@ -243,7 +245,7 @@ cp -a varostree/ostree/deploy/pine/var/* varpart/
 umount varpart varostree
 ## detach loop devices
 /sbin/losetup -D
-exit
+# exit
 ## reboot
 sync
 echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; sleep 1;

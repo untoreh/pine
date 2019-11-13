@@ -57,6 +57,19 @@ while [ -z "$(losetup -P /dev/loop$lon $PWD/image.pine && echo true)" ]; do
 	sleep 1
 done
 
+## https://github.com/moby/moby/issues/27886#issuecomment-417074845
+LOOPDEV=$(losetup --find --show --partscan "${PWD}image.pine")
+
+# drop the first line, as this is our LOOPDEV itself, but we only what the child partitions
+PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
+COUNTER=1
+for i in $PARTITIONS; do
+    MAJ=$(echo $i | cut -d: -f1)
+    MIN=$(echo $i | cut -d: -f2)
+    if [ ! -e "${LOOPDEV}p${COUNTER}" ]; then mknod ${LOOPDEV}p${COUNTER} b $MAJ $MIN; fi
+    COUNTER=$((COUNTER + 1))
+done
+
 ## p3 is the root partition
 mkdir -p /upos
 mount -o nouuid /dev/loop${lon}p3 /upos
