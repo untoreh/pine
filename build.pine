@@ -10,7 +10,7 @@ dd if=/dev/zero of=image.pine bs=512 count=786432
 losetup -P /dev/loop0 image.pine
 
 sfdisk /dev/loop0 < layout.pine
-mkfs.xfs -f -L /boot -i size=1024 /dev/loop0p1
+mkfs.ext2 -L /boot -I 1024 /dev/loop0p1
 mkfs.xfs -f -L /sysroot -d agcount=8 -i size=1024 /dev/loop0p3
 mkswap -L swap /dev/loop0p2
 
@@ -45,7 +45,7 @@ while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
         cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
         sleep 1
 done
-xfs_repair /dev/loop0p1
+# xfs_repair /dev/loop0p1
 xfs_repair /dev/loop0p3
 losetup -d /dev/loop/0 &>/dev/null
 

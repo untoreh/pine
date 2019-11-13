@@ -58,7 +58,7 @@ while [ -z "$(losetup -P /dev/loop$lon $PWD/image.pine && echo true)" ]; do
 done
 
 ## https://github.com/moby/moby/issues/27886#issuecomment-417074845
-LOOPDEV=$(losetup --find --show --partscan "${PWD}image.pine")
+LOOPDEV=$(losetup --find --show --partscan "${PWD}/image.pine")
 
 # drop the first line, as this is our LOOPDEV itself, but we only what the child partitions
 PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
@@ -157,7 +157,7 @@ while $(mountpoint -q /upos || cat /proc/mounts | grep loop${lon}); do
 	cat /proc/mounts | grep loop${lon} | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
 	sleep 1
 done
-xfs_repair /dev/loop${lon}p1
+# xfs_repair /dev/loop${lon}p1
 xfs_repair /dev/loop${lon}p3
 losetup -d /dev/loop/${lon} &>/dev/null
 mv imgtmp/image.pine ./
