@@ -8,11 +8,24 @@ cd /srv
 rm -rf /os &>/dev/null
 mkdir -p /os
 
-dd if=/dev/zero of=image.pine bs=512 count=1048576
+dd if=/dev/zero of=image.pine bs=512 count=1048576 conv=fsync
 losetup -P /dev/loop0 image.pine
 
+## https://github.com/moby/moby/issues/27886#issuecomment-417074845
+LOOPDEV=$(losetup --find --show --partscan "${PWD}image.pine")
+
+# drop the first line, as this is our LOOPDEV itself, but we only what the child partitions
+PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
+COUNTER=1
+for i in $PARTITIONS; do
+    MAJ=$(echo $i | cut -d: -f1)
+    MIN=$(echo $i | cut -d: -f2)
+    if [ ! -e "${LOOPDEV}p${COUNTER}" ]; then mknod ${LOOPDEV}p${COUNTER} b $MAJ $MIN; fi
+    COUNTER=$((COUNTER + 1))
+done
+
 sfdisk /dev/loop0 < layout.pine
-mkfs.xfs -f -L /boot -i size=1024 /dev/loop0p1
+mkfs.ext2 -f -L /boot -I 1024 /dev/loop0p1
 mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 /dev/loop0p3
 mkswap -L swap /dev/loop0p2
 

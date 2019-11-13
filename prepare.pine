@@ -24,6 +24,7 @@ apk add \
 	ostree \
 	grub-bios \
 	xfsprogs \
+  e2fspgros \
 	squashfs-tools \
 	go musl-dev make linux-headers
 
