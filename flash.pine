@@ -196,7 +196,7 @@ fi
 ## unmount the image and flash
 umount rootfs/
 sync
-xfs_repair /dev/loop${lon}p1 || exit
+# xfs_repair /dev/loop${lon}p1 || exit
 xfs_repair /dev/loop${lon}p3 || exit
 
 sync
