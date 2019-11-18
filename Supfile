@@ -393,7 +393,7 @@ commands:
     desc: start the consul service
     run: |
       rc-update add consul default
-      setcap 'cap_net_bind_service=+ep' $(which consul)
+      setcap 'cap_net_bind_service=+ep' $(realpath $(which consul))
       rc-service consul start
   consul-install:
     desc: install consul binaries
