@@ -22,7 +22,7 @@ if [ -z "$NODE" ]; then
 fi
 
 ## vars
-bburl=https://busybox.net/downloads/binaries/1.30.0-i686/busybox
+bburl=https://busybox.net/downloads/binaries/1.31.0-defconfig-multiarch-musl/busybox-x86_64
 wget=/usr/bin/wget
 
 ## mount tmpfs
