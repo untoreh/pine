@@ -1,3 +1,20 @@
 #!/bin/sh -l
 
-sup local dup-backup
+## configure threads
+threads=$(nproc || cat /proc/cpuinfo | grep -c 'core id')
+[ -z "$threads" ] && threads=2
+
+## load variables
+. /etc/profile
+set -a; . /etc/conf.d/dup 2>/dev/null; set +a
+
+## checks
+type dup 1>/dev/null || { echo "error: backup tool not found on system!"; exit 1; }
+cd /opt/dup/repo || { echo "error: backup repository not found!"; exit 1; }
+
+## first prune
+dup prune -keep 0:7 -threads "$threads"
+
+## then backup
+dup backup -stats -threads "$threads" -storage default
+
