@@ -427,7 +427,10 @@ commands:
         "ports": {
           "dns": ${DNS_PORT:-53}
         },
-        "recursors": [ "1.1.1.1", "8.8.8.8" ]
+        "recursors": [ "1.1.1.1", "8.8.8.8" ],
+        "log_rotate_bytes": 131072,
+        "log_rotate_max_files": 3,
+        "log_rotate_duration": "11h"
       }
       EOF
       # rc-update add consul_nameserver boot
