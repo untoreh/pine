@@ -1,7 +1,7 @@
 #!/bin/bash
 
-. ./functions.pine
-name=pine
+. ./functions.sh
+name=pine_ovz
 ref=trunk
 
 ## get release tag
@@ -68,6 +68,52 @@ stop() {
 }
 EOF
 chmod +x etc/init.d/vardirs
+
+cat << 'EOF' >etc/init.d/ostree-booted
+#!/sbin/openrc-run
+
+description="Mount ostree booted flag"
+
+depend()
+{
+        need bootmisc
+}
+
+start() {
+        ebegin "creating flag"
+        touch /run/ostree-booted
+        chmod 640 /run/ostree-booted
+        mount -o bind,private,ro /run/ostree-booted /run/ostree-booted
+        eend $?
+}
+
+stop() {
+        return
+}
+EOF
+chmod +x etc/init.d/ostree-booted
+
+mkdir -p etc/local.d
+cat << EOF >etc/local.d/00-devs.start
+rm /dev/console
+rm /dev/full
+rm /dev/null
+rm /dev/zero
+rm /dev/ptmx
+rm /dev/tty
+rm /dev/random
+rm /dev/urandom
+
+mknod -m 622 /dev/console c 5 1
+mknod -m 666 /dev/full c 1 7
+mknod -m 666 /dev/null c 1 3
+mknod -m 666 /dev/zero c 1 5
+mknod -m 666 /dev/ptmx c 5 2
+mknod -m 666 /dev/tty c 5 0
+mknod -m 444 /dev/random c 1 8
+mknod -m 444 /dev/urandom c 1 9
+chown -v root:tty /dev/{console,ptmx,tty}
+EOF
 
 cat << 'EOF' >etc/init.d/knobs
 #!/sbin/openrc-run
@@ -155,12 +201,12 @@ echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 
 ## fstab
 cat << EOF >etc/fstab
-/dev/bd3                 /              xfs    rw,noatime,largeio,inode64                          0  0
-/dev/bd1                 /boot          ext2   rw,noexec,nodev,nofail                              0  0
-/dev/bd2                 swap           swap   defaults                                            0  0
-/boot                    /sysroot/boot  none   bind                                                0  0
-/ostree/deploy/pine/var  /var           none   bind                                                0  0
-tmpfs                    /tmp           tmpfs  defaults,nosuid,nodev                               0  0
+proc                        /proc     proc    defaults               0  0
+none                        /dev/pts  devpts  rw,gid=5,mode=620      0  0
+none                        /dev/shm  tmpfs   defaults               0  0
+tmpfs                       /tmp      tmpfs   defaults,nosuid,nodev  0  0
+/ostree/deploy/${name}/var  /var      none    bind                   0  0
+/sysroot/boot               /boot     none    bind                   0  0
 EOF
 
 ## repositories
@@ -188,14 +234,16 @@ EOF
 ## tunings
 mkdir -p etc/sysctl.d
 cat << EOF >etc/sysctl.d/02-tweaks.conf
+## ovz specific (some are not allowed anyway like swappiness)
+vm.swappiness=100
+vm.vfs_cache_pressure=0
+vm.min_free_kbytes=0
+vm.dirty_background_ratio=66
+vm.dirty_ratio=99
+
 ## mem
-vm.swappiness=10
-vm.vfs_cache_pressure=40
-vm.dirty_background_ratio=4
-vm.dirty_ratio=80
 vm.overcommit_memory=1
 vm.overcommit_ratio=100
-vm.min_free_kbytes=65536
 kernel.pid_max=4194303
 fs.file-max=6544018
 fs.nr_open=6544018
@@ -273,17 +321,13 @@ apkc() {
 
 
 apkc add --initdb --update-cache alpine-base sudo tzdata  \
- mkinitfs xfsprogs grub-bios \
- util-linux binutils coreutils blkid multipath-tools  \
+ binutils coreutils procps util-linux \
  ca-certificates wget ethtool iptables  \
  ostree git  \
  htop iftop bash sysstat tmux mosh-server \
- dropbear-ssh dropbear-scp openssh-sftp-server
+ dropbear-ssh dropbear-scp openssh-sftp-server \
 
-## fix for grub without syslinux
-rm etc/grub.d/10_linux
-## grub2 link for ostree compatibility
-ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
+
 
 ## SETUP
 chpwd() {
@@ -298,50 +342,35 @@ echo '' >etc/motd
 chpwd setup-hostname $hostname
 chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
-chpwd setup-ntp -c busybox
 
 ## DROPBEAR OPTIONS
 mkdir -p /root/.ssh /home/pine/.ssh
 
 ## SERVICES
-for r in `cat ../runlevels.pine`; do
+for r in `cat ../runlevels_ovz.sh`; do
     mkdir -p `dirname $r`
     ln -srf etc/init.d/`basename $r` `echo "$r" | sed 's#^/##'`
 done
 
 ## UPDATES/REBOOTS
-cp ../system-upgrade etc/periodic/daily
+cp ../system-upgrade_ovz etc/periodic/daily/system-upgrade
 chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
-. ../glib.pine $PWD
-. ../extras.pine
-. ../extras_common.pine
-
-## BOOT
-flavor="virt"
-apkc add --no-scripts linux-$flavor
-patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
-chroot $PWD mkinitfs  \
- -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \
- $(basename `ls -d lib/modules/*`)
-mv boot tmpboot && mkdir boot
-cp -a tmpboot/vmlinuz-$flavor boot/
-cp -a tmpboot/initramfs-$flavor boot/
-cksum=`cat boot/vmlinuz-$flavor boot/initramfs-$flavor | sha256sum | cut -f 1 -d ' '`
-mv boot/vmlinuz-$flavor boot/vmlinuz-$flavor-${cksum}
-mv boot/initramfs-$flavor boot/initramfs-$flavor-${cksum}
-rm tmpboot -rf
-
-## KERNEL MODULES
-KVER=$(cat usr/share/kernel/$flavor/kernel.release)
-mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
-cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
-chpwd depmod $KVER
+printc "installing glib..."
+. ../glib.sh $PWD
+printc "installing extras ovz..."
+. ../extras_ovz.sh
+printc "installing extras common..."
+. ../extras_common.sh
 
 ## FIXES
+sed -r 's/(\ssysctl\s.*-p.*)/\1 >\/dev\/null/' -i etc/init.d/sysctl ## sysctl shutup on ovz
+sed 's/$retval/0/' -i etc/init.d/sysctl ## sysctl shutup on ovz
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
+touch boot/vmlinuz-0000000000000000000000000000000000000000000000000000000000000000
+sed -r 's/^(tty|1|2)/#tty/' -i etc/inittab ## no ttys inside containers
 
 ## CLEANUP
 while `mountpoint -q ./proc`; do
@@ -372,7 +401,7 @@ cd -
 
 ## OSTREE
 cd /srv
-ostree --repo=pine commit -s "$(date)-build" -b ${ref} --tree=dir="${name}_tree"
-ostree summary -u --repo=pine
-ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' > pine.sum
+ostree --repo=${name} commit -s $(date)'-build' -b ${ref} --tree=dir=${name}_tree
+ostree summary -u --repo=${name}
+ostree --repo=${name} ls ${ref} -Cd | awk '{print $5}' > ${name}.sum
 #pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d

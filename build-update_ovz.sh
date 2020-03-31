@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 name=pine_ovz
 artifact_repo="untoreh/pine"
 delta="delta_ovz"
@@ -22,7 +22,7 @@ if [ ! -e "$artifact " ]; then
     fetch_artifact $artifact_repo $artifact - >$artifact
     if [ "$?" = 1 ]; then
 	      echo "no previous build found, creating new rootfs"
-	      init/build_ovz.pine
+	      init/build_ovz.sh
 	      exit
     fi
 else

@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 cd /srv
 
 # $1 repo/tree name

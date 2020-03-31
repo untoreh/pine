@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 
 cd /srv
 rootfs=rootfs

@@ -30,7 +30,7 @@ stop() {
 EOF
 chmod +x etc/init.d/clearlock
 rm sbin/reboot ## remove to avoid following symlink during copy
-cp ../reboot.pine sbin/reboot
+cp ../reboot.sh sbin/reboot
 cp ../reboot_locker sbin/
 cp ../reboot_try_queue sbin/
 chmod +x sbin/reboot sbin/reboot_locker sbin/reboot_try_queue
@@ -113,7 +113,7 @@ EOF
 chmod +x usr/bin/iomon
 
 ## some utility shell functions
-cp ../functions.pine etc/profile.d/func.sh
+cp ../functions.sh etc/profile.d/func.sh
 ## make sure core dumps are disabled
 cat << EOF >etc/profile
 ulimit -c 0

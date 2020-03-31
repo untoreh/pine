@@ -1,5 +1,5 @@
 #!/bin/sh -x
-. ./functions.pine
+. ./functions.sh
 
 ## ostree workaround
 ln -s /usr/sbin/grub-mkconfig /usr/sbin/grub2-mkconfig
@@ -28,5 +28,5 @@ apk add \
 	squashfs-tools \
 	go musl-dev make linux-headers
 
-. ./functions.pine
-. ./glib.pine
+. ./functions.sh
+. ./glib.sh

@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 
 rootfs=rootfs
 delta="delta"
@@ -24,7 +24,7 @@ for i in $PARTITIONS; do
     COUNTER=$((COUNTER + 1))
 done
 
-sfdisk /dev/loop0 < layout.pine
+sfdisk /dev/loop0 < layout.cfg
 mkfs.ext2 -L /boot -I 1024 /dev/loop0p1
 mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 /dev/loop0p3
 mkswap -L swap /dev/loop0p2

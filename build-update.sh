@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 name=pine
 
 ## confirm we made a new tree

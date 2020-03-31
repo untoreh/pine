@@ -109,7 +109,7 @@ cp /etc/resolv.conf etc/
 mount --bind /dev dev
 mount --bind /sys sys
 mount --bind /proc proc
-cat << 'CEOF' >customize.pine
+cat << 'CEOF' >customize.sh
 #!/bin/sh
 ## pass device name
 DEVICE=$1
@@ -251,6 +251,6 @@ sync
 echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; sleep 1;
 reboot -f
 CEOF
-chmod +x customize.pine
+chmod +x customize.sh
 #pivot_root $WORK $WORK/mnt 
-chroot . /bin/sh -x customize.pine $DEVICE
+chroot . /bin/sh -x customize.sh $DEVICE

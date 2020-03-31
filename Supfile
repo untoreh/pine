@@ -399,17 +399,20 @@ commands:
     desc: install consul binaries
     local: |
       . /etc/profile.d/func.sh
-      apkc /opt/alp add consul consul-template
+      grep testing /opt/alp/etc/apk/repositories || \
+      echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /opt/alp/etc/apk/repositories
+      apkc /opt/alp add consul
       mkdir -p /opt/bin
-      ln -s /opt/alp/usr/sbin/consul* /opt/bin/
+      ln -s /opt/alp/usr/sbin/consul /opt/bin/
       [ ! -d /etc/consul ] && cp -a /opt/alp/etc/consul /etc
       [ ! -f /etc/conf.d/consul ] && cp -a /opt/alp/etc/conf.d/consul /etc/conf.d
       cp -a /opt/alp/etc/init.d/consul /etc/init.d/
       id consul || adduser -D consul
       sed -r 's$/usr/sbin$/opt/bin$' -i /etc/init.d/consul
       sed -r 's$consul validate$/opt/bin/consul validate$' -i /etc/init.d/consul
-      setcap 'cap_net_bind_service=+ep' $(realpath $(which consul)) 
-      chmod +x $(realpath $(which consul)) $(realpath $(which consul-template)) 
+      setcap 'cap_net_bind_service=+ep' $(realpath /opt/bin/consul) 
+      chown consul:consul -R /etc/consul
+      chmod +x /opt/bin/consul
   consul-node-config:
     desc: configure consul node settings
     run: |

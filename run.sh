@@ -1,36 +1,36 @@
 #!/bin/sh
-. ./functions.pine
+. ./functions.sh
 
 ## prepare
 printc "preparing..."
-./prepare.pine
+./prepare.sh
 
 cat <<EOF >main_ex
-. ./functions.pine
+. ./functions.sh
 main() {
 	## init the repo
 	printc "initializing the repo..."
-	./repo.pine
+	./repo.sh
 
 	## the tree of files
 	printc "growing bare/kvm tree..."
-	./make.pine
+	./make.sh
 	printc "growing ovz tree..."
-	./make_ovz.pine
+	./make_ovz.sh
 
 	## update image from github
 	printc "building image..."
 	printc "$TRAVIS_COMMIT_MESSAGE"
 	if [ "\${TRAVIS_COMMIT_MESSAGE/scratch-build}" != "\${TRAVIS_COMMIT_MESSAGE}" ]; then
 		printc "this is a scratch build..."
-		./init/build.pine
+		./init/build.sh
 		printc "ovz..."
-		./init/build_ovz.pine
+		./init/build_ovz.sh
 	else
 		printc "this is an updated build..."
-		./build-update.pine
+		./build-update.sh
 		printc "ovz..."
-		./build-update_ovz.pine
+		./build-update_ovz.sh
 	fi
 }
 main

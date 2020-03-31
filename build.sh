@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 
 cd /srv
 
@@ -9,7 +9,7 @@ mkdir -p /os
 dd if=/dev/zero of=image.pine bs=512 count=786432
 losetup -P /dev/loop0 image.pine
 
-sfdisk /dev/loop0 < layout.pine
+sfdisk /dev/loop0 < layout.cfg
 mkfs.ext2 -L /boot -I 1024 /dev/loop0p1
 mkfs.xfs -f -L /sysroot -d agcount=8 -i size=1024 /dev/loop0p3
 mkswap -L swap /dev/loop0p2

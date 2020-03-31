@@ -1,5 +1,5 @@
 #!/bin/bash
-. ./functions.pine
+. ./functions.sh
 name=pine_ovz
 artifact="rootfs_${name}.tgz"
 artifact_repo="untoreh/pine"
