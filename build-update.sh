@@ -28,11 +28,7 @@ case $1 in
 	*) ;;
 esac
 
-cat <<EOF >/etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
-EOF
+cp -a ./dist/cfg/repositories /etc/apk/repositories
 
 install_tools ostree util-linux wget
 
@@ -72,22 +68,25 @@ done
 
 ## p3 is the root partition
 mkdir -p /upos
-mount -o nouuid /dev/loop${lon}p3 /upos
+# use nouuid for xfs
+mount -o nouuid ${LOOPDEV}p3 /upos
 ## p1 is the boot partition
 mkdir -p /upos/boot
-mount -o nouuid /dev/loop${lon}p1 /upos/boot
+# don't use nouuid for ext2
+mount ${LOOPDEV}p1 /upos/boot
 
 ## delete deployments and prune before commit
 deployments=$(ostree --repo=/upos/ostree/repo refs ostree)
-for d in $deployments; do
-    ostree --sysroot=/upos admin undeploy ${d/*\/}
-	# ostree --repo=/upos/ostree/repo refs --delete ostree/${d}
-done
+if [ $(wc -l <<< "$deployments") -gt 1 ]; then
+    for d in $deployments; do
+        ostree --sysroot=/upos admin undeploy ${d/*\/}
+    done
+    ostree admin cleanup --sysroot=/upos
+fi
 # cmts=$(ostree log --repo=/upos/ostree/repo trunk | grep "^commit " | cut -d' ' -f2 | tail +1)
 # for c in $cmts; do
 # 	ostree prune --repo=/upos/ostree/repo --delete-commit=$c
 # done
-ostree admin cleanup --sysroot=/upos
 
 ## now commit the new tree to the old repo
 ## the image has to have enough space for commits...
@@ -110,29 +109,30 @@ compare_csums
 
 ## redeploy
 ## remove boot files to avoid failing the upgrade (because it triggers ostree grub
-## hooks which don't work in the build environment
-# rm -rf /upos/boot/grub*
+## hooks which doesn't work in the build environment
+rm -rf /upos/boot/*
 ostree admin deploy --sysroot=/upos --os=pine trunk \
 	--karg=root=UUID=$(blkid -s UUID -o value /dev/loop${lon}p3) \
 	--karg=rootfstype=xfs \
 	--karg=rootflags=rw,noatime,nodiratime,largeio,inode64
 
-## prune older commits
-ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="1 seconds ago"
+
 
 ## recreate boot files
 dpl=$(ls -dt /upos/ostree/deploy/pine/deploy/* | grep -E "\.[0-9]$" | head -1)
 mount --bind $dpl $dpl
 mount --bind /upos $dpl/sysroot
 mount --move $dpl /upos
-mount /dev/loop${lon}p1 /upos/boot
-mount /dev/loop${lon}p1 /upos/sysroot/boot
+mount ${LOOPDEV}p1 /upos/boot
+mount ${LOOPDEV}p1 /upos/sysroot/boot
 
 mount --bind /dev/ /upos/dev
 mount --bind /sys /upos/sys
 mount --bind /proc /upos/proc
 
-grub-install /dev/loop${lon} --root-directory=/upos
+## apparently we use i386 grub
+grub_modules=/upos/usr/lib/grub/i386-pc/
+grub-install -d $grub_modules ${LOOPDEV} --root-directory=/upos
 ln -sr /upos/boot/{grub,grub2}
 loader=$(ls -t /upos/boot/ | grep -E "loader\.[0-9]$" | head -1)
 chroot /upos grub-mkconfig -o /boot/${loader}/grub.cfg
@@ -149,17 +149,21 @@ cd ${h}
 tar cf delta_base.tar $rev
 rm $rev
 
+## prune older commits after delta have been generated
+ostree prune --repo=/upos/ostree/repo --refs-only --keep-younger-than="1 seconds ago"
 
 ## wrap up image
 sync
-while $(mountpoint -q /upos || cat /proc/mounts | grep loop${lon}); do
+loop_name=$(basename ${LOOPDEV})
+while $(mountpoint -q /upos || cat /proc/mounts | grep ${loop_name}); do
 	findmnt /upos -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
-	cat /proc/mounts | grep loop${lon} | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
+	cat /proc/mounts | grep ${loop_name} | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
 	sleep 1
 done
+# don't repair if boot is ext2
 # xfs_repair /dev/loop${lon}p1
-xfs_repair /dev/loop${lon}p3
-losetup -d /dev/loop/${lon} &>/dev/null
+xfs_repair ${LOOPDEV}p3
+losetup -d ${LOOPDEV} &>/dev/null
 mv imgtmp/image.pine ./
 
 ## checksum and compress
