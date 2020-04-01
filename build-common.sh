@@ -50,6 +50,7 @@ make_fs(){
 # mount root and boot partitions
 mount_parts(){
     check_vars sysroot root_part boot_part
+    printc "mounting $boot_part and $root_part"
     mkdir -p $sysroot
     if blkid -t TYPE=xfs $root_part; then
         nouuid="-o nouuid"
@@ -69,6 +70,7 @@ mount_parts(){
 # fake the deployment to install grub using OSTree deployment files
 fake_deploy(){
     check_vars sysroot os_name boot_part
+    printc "setting up fake deploy"
     # get the REV number of the REF scraping the deployment link farm checkout
     dpl=$(find $sysroot/ostree/deploy/$os_name/deploy/ -maxdepth 1 | grep "\.0$")
     check_vars dpl || \
@@ -91,6 +93,7 @@ fake_deploy(){
 install_grub(){
     local update=$1
     check_vars sysroot LOOPDEV boot_part
+    printc "installing grub on $sysroot"
     # install the grub modules
     if [ -n "$update" ]; then
         ## apparently we use i386 grub
@@ -119,6 +122,7 @@ unmount_sysroot() {
         echo "${FUNCNAME[0]}: provide loop device and sysroot"
         exit 1
     }
+    printc "unmounting sysroot $sysroot"
     loop_name=$(basename ${LOOPDEV})
     while $(mountpoint -q $sysroot || cat /proc/mounts | grep ${loop_name}); do
 	      findmnt $sysroot -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
@@ -129,6 +133,7 @@ unmount_sysroot() {
 
 ostree_rm_deploys(){
     check_vars sysroot
+    printc "clearing ostree deployments"
     local ref_deploy=ostree
     deployments=$(ostree --repo=$sysroot/ostree/repo refs $ref_deploy)
     if [ $(wc -l <<< "$deployments") -gt 1 ]; then
@@ -141,6 +146,7 @@ ostree_rm_deploys(){
 
 ostree_no_minspace(){
     check_vars sysroot
+    printc "setting ostree min space"
     ostree config --repo=$sysroot/ostree/repo \
            set core.min-free-space-percent 0
 }
@@ -150,6 +156,7 @@ ostree_no_minspace(){
 ostree_commit(){
     local tree=$1
     check_vars tree sysroot ref_name os_name ref_name
+    printc "committing to ostree repo"
     local date=$(date +%Y-%m-%d)
     rev_number=$(ostree --repo=$sysroot/ostree/repo commit \
                         --skip-if-unchanged -s "$date" \
@@ -166,6 +173,7 @@ ostree_commit(){
 
 ostree_fsck(){
     check_vars sysroot
+    printc "checking ostree repo consistency"
     ostree fsck --repo=$sysroot/ostree/repo || \
         { err "${FUNCNAME[0]}: ostree repo check failed"; exit 1; }
     sync
@@ -173,6 +181,7 @@ ostree_fsck(){
 
 ostree_prune(){
     check_vars sysroot
+    printc "pruning ostree"
     local keep=${1:-"1 day ago"}
     ostree prune --repo=$sysroot/ostree/repo \
            --refs-only --keep-younger-than=$keep
@@ -228,6 +237,7 @@ arc_delta(){
 # $1 image_name
 csum_arc_image(){
     local image_name=$1
+    printc "archiving image $image_name"
     check_vars image_name
     sha256sum $image_name > ${image_name}.sum
     tar cvzf ${image_name}.tgz ${image_name} ${image_name}.sum
@@ -246,6 +256,7 @@ repair_xfs(){
 # $1 remote file
 compare_pine_csums() {
     check_vars sysroot ref_name repo
+    printc "comparing checksums"
     rem_file=$1
     [ -z "$repo" ] || [ -z "$sysroot" ] || [ -z "$ref_name" ] && \
         {
