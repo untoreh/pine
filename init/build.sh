@@ -1,5 +1,6 @@
 #!/bin/bash
 . ./functions.sh
+. ./build-common.sh
 
 rootfs=rootfs
 sysroot=/os
