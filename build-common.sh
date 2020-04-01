@@ -74,11 +74,13 @@ fake_deploy(){
     check_vars sysroot os_name boot_part
     printc "setting up fake deploy"
     # get the REV number of the REF scraping the deployment link farm checkout
-    dpl=$(find $sysroot/ostree/deploy/$os_name/deploy/ -maxdepth 1 | grep "\.0$")
+    printc "listing deployments paths..."
+    find $sysroot/ostree/deploy/$os_name/deploy/
+    dpl=$(find $sysroot/ostree/deploy/$os_name/deploy/ -maxdepth 1 | grep -E "\.[0-9]$")
     check_vars dpl || \
         {
         echo "${FUNCNAME[0]}: no deployment to fake"
-        return 1
+        exit 1
     }
     mount --bind $dpl $dpl
     mount --bind $sysroot $dpl/sysroot
@@ -265,7 +267,9 @@ compare_pine_csums() {
             echo "\$repo or \$sysroot  or \$ref_name not set"
             return 1
         }
-    old_csum=$(fetch_artifact ${repo} $rem_file -)
+    # the last version is the one being built
+    csum_V=$(last_version offset 2)
+    old_csum=$(fetch_artifact ${repo}:$csum_V $rem_file -)
     [ -z "$old_csum" ] && err old_csum empty
     new_csum=$(ostree --repo=$sysroot/ostree/repo ls $ref_name -Cd | awk '{print $5}')
     [ -z "$new_csum" ] && err new_csum empty
