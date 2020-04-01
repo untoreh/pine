@@ -26,7 +26,7 @@ clear_sysroot(){
 ## check that vars are set
 ## $@ vars names
 check_vars(){
-    [ -z "$@" ] && return
+    [ -z "$*" ] && return
     for v in $@; do
         eval "d=\$$v"
         [ -z "$d" ] && echo "${FUNCNAME[1]:-main}: $v ${message:-not set}"

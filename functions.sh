@@ -380,19 +380,30 @@ fetch_pine() {
 # mount a image on a loop device
 # $1 : image path
 loop_image() {
-    losetup -D "$1"
+    local image_path=$1
+    losetup -D "$image_path"
     find /dev/loop*p* -exec rm {} \; 2>/dev/null
+    echo "listing loop devices"
+    find /dev/loop*
+    [ -e "$image_path" ] || {
+        echo "${FUNCNAME[0]}: image not found"
+        exit 1
+    }
     lon=0
     while
-        losetup -P /dev/loop$lon $PWD/image.pine
+        [ -e /dev/loop$lon ] || {
+            echo "${FUNCNAME[0]}: exhausted loop devices"
+            exit 1
+        }
+        losetup -P /dev/loop$lon "$image_path"
         echo $?
         sleep 1
         ## https://github.com/moby/moby/issues/27886#issuecomment-417074845
-        LOOPDEV=$(losetup --find --show --partscan "${PWD}/image.pine" 2>/dev/null)
+        LOOPDEV=$(losetup --find --show --partscan "$image_path" 2>/dev/null)
         [ -n "$LOOPDEV" ] && break
         parts=$(find /dev/loop*p*)
         [ -n "$parts" ] && break
-        losetup -D "${PWD}/image.pine"
+        losetup -D "$image_path"
 	      lon=$((lon + 1)); do :
     done
 
