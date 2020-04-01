@@ -47,14 +47,19 @@ last_version_g(){
 
 ## $1 repo $2 type
 last_release() {
+    local repo="${1}"
     if [ -n "$2" ]; then
-        latest=
-        release_type="$2"
+        local latest=
+        if [ "$2" = offset ]; then
+            local offset=$3
+        else
+            local release_type="$2"
+        fi
     else
-        latest="/latest"
+        local latest="/latest"
     fi
-    wget -qO- https://api.github.com/repos/${1}/releases$latest \
-        | awk '/tag_name/ { print $2 }' | grep "$release_type" | head -1 | sed -r 's/",?//g'
+    wget -qO- https://api.github.com/repos/${repo}/releases$latest \
+        | awk '/tag_name/ { print $2 }' | grep "$release_type" | head -${offset:-1} | tail -1 | sed -r 's/",?//g'
 }
 
 ## $1 repo $2 tag name
@@ -362,7 +367,8 @@ fetch_pine() {
     if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
         printc "no latest image found, trying last image available."
         ## try the last if there is no latest
-        lasV=$(last_release ${repo})
+        ## offset by 1 since the last tag is the one being build
+        lasV=$(last_release ${repo} offset 2)
         fetch_artifact ${repo}:${lasV} image.pine.tgz $dest
         if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
 	          err "failed downloading previous image, terminating."
