@@ -196,7 +196,7 @@ fetch_artifact() {
         dest="$3"
         shift 3
     fi
-    [ -z "$(echo "$art_url" | grep "://")" ] && err "no url found for ${artf} at ${repo_fetch}:${repo_tag}" && return 1
+    echo "$art_url" | grep "://" || { err "no url found for ${artf} at ${repo_fetch}:${repo_tag}"; return 1; }
     ## if no destination dir stream to stdo
     case "$dest" in
         "-")
@@ -207,14 +207,14 @@ fetch_artifact() {
         ;;
         *)
         mkdir -p $dest
-        if [ $(echo "$artf" | grep -E "(gz|tgz|xz|7z)$") ]; then
+        if echo "$artf" | grep -E "(gz|tgz|xz|7z)$"; then
             wget $@ $opts $art_url -qO- | tar xzf - -C $dest
         else
-            if [ $(echo "$artf" | grep -E "zip$") ]; then
+            if echo "$artf" | grep -E "zip$"; then
                 wget $@ $hader $art_url -qO artifact.zip && unzip artifact.zip -d $dest
                 rm artifact.zip
             else
-                if [ $(echo "$artf" | grep -E "bz2$") ]; then
+                if echo "$artf" | grep -E "bz2$"; then
                     wget $@ $opts $art_url -qO- | tar xjf - -C $dest
                 else
                     wget $@ $opts $art_url -qO- | tar xf - -C $dest
@@ -351,6 +351,60 @@ copy_image_cfg() {
     cp $PWD/templates/${pkg}/{image.conf,image.env} ${pkg}/
 }
 
+# download latest pine image or last image
+# $1 repo
+# $2 dest
+fetch_pine() {
+    check_vars repo
+    repo=$1
+    dest=$2
+    fetch_artifact ${repo} image.pine.tgz $dest
+    if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
+        printc "no latest image found, trying last image available."
+        ## try the last if there is no latest
+        lasV=$(last_release ${repo})
+        fetch_artifact ${repo}:${lasV} image.pine.tgz $dest
+        if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
+	          err "failed downloading previous image, terminating."
+	          exit 1
+        fi
+    fi
+}
+
+# mount a image on a loop device
+# $1 : image path
+loop_image() {
+    losetup -D "$1"
+    find /dev/loop*p* -exec rm {} \; 2>/dev/null
+    lon=0
+    while
+        losetup -P /dev/loop$lon $PWD/image.pine
+        echo $?
+        sleep 1
+        ## https://github.com/moby/moby/issues/27886#issuecomment-417074845
+        LOOPDEV=$(losetup --find --show --partscan "${PWD}/image.pine" 2>/dev/null)
+        [ -n "$LOOPDEV" ] && break
+        parts=$(find /dev/loop*p*)
+        [ -n "$parts" ] && break
+        losetup -D "${PWD}/image.pine"
+	      lon=$((lon + 1)); do :
+    done
+
+    # drop the first line, as this is our LOOPDEV itself, but we only what the child partitions
+    parts=$(find /dev/loop*p* 2>/dev/null)
+    if [ -z "$parts" ]; then
+        PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
+        COUNTER=1
+        for i in $PARTITIONS; do
+            MAJ=$(echo $i | cut -d: -f1)
+            MIN=$(echo $i | cut -d: -f2)
+            if [ ! -e "${LOOPDEV}p${COUNTER}" ]; then mknod ${LOOPDEV}p${COUNTER} b $MAJ $MIN; fi
+            COUNTER=$((COUNTER + 1))
+        done
+    fi
+    echo $LOOPDEV
+}
+
 ## $1 ref
 ## $2 skip links
 ## routing after-modification actions for ostree checkouts
@@ -455,10 +509,268 @@ b64name() {
     echo $(basename $(find $1 | grep -E [a-z0-9]{64}))
 }
 
-compare_csums() {
+# ensures some things are setup
+config_env(){
+    check_vars os_name
+    ## confirm we made a new tree
+    if [ ! "$(find ${os_name}_tree/* -maxdepth 0 | wc -l)" -gt 0 ]; then
+	      echo "${FUNCNAME[0]}: newer tree not grown. (tree folder is empty)"
+	      exit 1
+    fi
+    cp -a ./dist/cfg/repositories /etc/apk/repositories || {
+        echo "${FUNCNAME[0]} not in main repo directory"
+        exit 1
+    }
+    install_tools ostree util-linux wget
+    h=$PWD
+    repodir="/srv"
+    image_path="imgtmp"
+    mkdir -p $image_path
+}
+
+clear_sysroot(){
+    check_vars sysroot
+    rm -rf $sysroot &>/dev/null
+    mkdir -p $sysroot
+}
+
+## check that vars are set
+## $@ vars names
+check_vars(){
+    [ -z "$@" ] && return
+    for v in $@; do
+        eval "d=\$$v"
+        [ -z "$d" ] && echo "${FUNCNAME[1]:-main}: $v ${message:-not set}"
+        return 1
+    done
+}
+
+## create filesystems on root and boot partitions
+make_fs(){
+    check_vars LOOPDEV boot_part root_part swap_part
+    [ ! -e layout.cfg ] && {
+        echo "${FUNCNAME[0]}: layout.cfg not found"
+        exit 1
+    }
+    sfdisk $LOOPDEV < layout.cfg
+    mkfs.ext2 -L /boot -I 1024 $boot_part
+    mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 $root_part
+    mkswap -L swap $swap_part
+}
+
+# mount root and boot partitions
+mount_parts(){
+    check_vars sysroot root_part boot_part
+    mkdir -p $sysroot
+    if blkid -t TYPE=xfs $root_part; then
+        nouuid="-o nouuid"
+    else
+        nouuid=
+    fi
+    mount $nouuid $root_part $sysroot
+    mkdir -p $sysroot/boot
+    if blkid -t TYPE=xfs $boot_part; then
+        nouuid="-o nouuid"
+    else
+        nouuid=
+    fi
+    mount $nouuid $boot_part $sysroot/boot
+}
+
+# fake the deployment to install grub using OSTree deployment files
+fake_deploy(){
+    check_vars sysroot os_name boot_part
+    # get the REV number of the REF scraping the deployment link farm checkout
+    dpl=$(find $sysroot/ostree/deploy/$os_name/deploy/ -maxdepth 1 | grep "\.0$")
+    check_vars dpl || \
+        {
+        echo "${FUNCNAME[0]}: no deployment to fake"
+        return 1
+    }
+    mount --bind $dpl $dpl
+    mount --bind $sysroot $dpl/sysroot
+    mount --move $dpl $sysroot
+    mount $boot_part $sysroot/boot
+    mount $boot_part $sysroot/sysroot/boot
+    mount --bind /dev/ $sysroot/dev
+    mount --bind /sys  $sysroot/sys
+    mount --bind /proc $sysroot/proc
+}
+
+# install grub on boot partition
+# $1 update
+install_grub(){
+    local update=$1
+    check_vars sysroot LOOPDEV boot_part
+    # install the grub modules
+    if [ -n "$update" ]; then
+        ## apparently we use i386 grub
+        grub_modules=$sysroot/usr/lib/grub/i386-pc/
+        grub-install -d $grub_modules ${LOOPDEV} --root-directory=$sysroot
+    else
+        grub-install $boot_part --root-directory=$sysroot
+    fi
+    # a fix for missing links
+    ln -sr $sysroot/boot/{grub,grub2}
+    # use the OSTree grub scripts to generate the boot config
+    loader=$(ls -t $sysroot/boot/ | grep -E "loader\.[0-9]$" | head -1)
+    chroot $sysroot grub-mkconfig -o /boot/${loader}/grub.cfg
+    # the OSTree script doesn't touch the main grub config path, so have to link it
+    cd $sysroot/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
+}
+
+# remove loop device
+# $1 device
+# $2 sysroot
+unmount_sysroot() {
+    sync
+    local LOOPDEV=$1
+    local sysroot=$2
+    [ -z "$1" -o -z "$2" ] && {
+        echo "${FUNCNAME[0]}: provide loop device and sysroot"
+        exit 1
+    }
+    loop_name=$(basename ${LOOPDEV})
+    while $(mountpoint -q $sysroot || cat /proc/mounts | grep ${loop_name}); do
+	      findmnt $sysroot -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
+	      cat /proc/mounts | grep ${loop_name} | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
+	      sleep 1
+    done
+}
+
+ostree_rm_deploys(){
+    check_vars sysroot
+    local ref_deploy=ostree
+    deployments=$(ostree --repo=$sysroot/ostree/repo refs $ref_deploy)
+    if [ $(wc -l <<< "$deployments") -gt 1 ]; then
+        for d in $deployments; do
+            ostree --sysroot=$sysroot admin undeploy ${d/*\/}
+        done
+        ostree admin cleanup --sysroot=$sysroot
+    fi
+}
+
+ostree_no_minspace(){
+    check_vars sysroot
+    ostree config --repo=$sysroot/ostree/repo \
+           set core.min-free-space-percent 0
+}
+
+# commit a tree
+# $1 tree path
+ostree_commit(){
+    local tree=$1
+    check_vars tree sysroot ref_name os_name ref_name
+    local date=$(date +%Y-%m-%d)
+    rev_number=$(ostree --repo=$sysroot/ostree/repo commit \
+                        --skip-if-unchanged -s "$date" \
+                        -b $ref_name \
+                        --tree=dir=$tree)
+    if [ "$?" != 0 ]; then
+        local ostree_repo="$(dirname $tree)/${os_name}"
+        rev_number=$(ostree --repo=$ostree_repo commit \
+                            --skip-if-unchanged -s "$date" \
+                            -b $ref_name \
+                            --tree=dir=$tree)
+    fi
+}
+
+ostree_fsck(){
+    check_vars sysroot
+    ostree fsck --repo=$sysroot/ostree/repo || \
+        { err "${FUNCNAME[0]}: ostree repo check failed"; exit 1; }
+    sync
+}
+
+ostree_prune(){
+    check_vars sysroot
+    local keep=${1:-"1 day ago"}
+    ostree prune --repo=$sysroot/ostree/repo \
+           --refs-only --keep-younger-than=$keep
+}
+
+ostree_deploy(){
+    check_vars sysroot os_name ref_name root_part
+    ## remove boot files to avoid failing the upgrade (because it triggers ostree grub
+    ## hooks which doesn't work in the build environment
+    rm -rf $sysroot/boot/*
+    ostree admin deploy --sysroot=$sysroot --os=$os_name $ref_name \
+	         --karg=root=UUID=$(blkid -s UUID -o value $root_part) \
+	         --karg=rootfstype=xfs \
+	         --karg=rootflags=rw,noatime,nodiratime,largeio,inode64
+}
+
+# creata a delta archive
+# $1 delta name
+# $2 empty flag
+gen_delta(){
+    check_vars ref_name sysroot
+    local delta_name=$1
+    [ -n "$2" ] && local empty="--empty"
+    [ -z "$sysroot" ] || \
+        [ -z "$ref_name" ] && {
+            echo "gen_delta: empty vars."
+            return 1
+        }
+    ostree --repo=$sysroot/ostree/repo static-delta \
+           generate $ref_name $empty \
+           --inline --min-fallback-size 0 \
+           --filename=$delta_name | grep -vE "^\.\/"
+}
+# archive delta
+# $1 work dir
+# $2 archive name
+# $3 delta name
+arc_delta(){
+    local workdir=$1
+    local arc_name=$2
+    local delta_name=$3
+    cd $workdir
+    [ ! -e $delta_name ] && {
+        echo "file $delta_name not found in $workdir"
+        return 1
+    }
+    tar cf $arc_name $delta_name
+    rm $delta_name
+    cd -
+}
+
+# checksum and archive image
+# $1 image_name
+csum_arc_image(){
+    local image_name=$1
+    check_vars image_name
+    sha256sum $image_name > ${image_name}.sum
+    tar cvzf ${image_name}.tgz ${image_name} ${image_name}.sum
+}
+
+# maybe fix xfs partitions
+# $@ partitions
+repair_xfs(){
+    for p in $@; do
+        if blkid -t TYPE=xfs $p; then
+            xfs_repair $p
+        fi
+    done
+}
+# match a remote checksum against the ostree repo checksum
+# $1 remote file
+compare_pine_csums() {
+    check_vars sysroot ref_name repo
+    rem_file=$1
+    [ -z "$repo" ] || [ -z "$sysroot" ] || [ -z "$ref_name" ] && \
+        {
+            echo "\$repo or \$sysroot  or \$ref_name not set"
+            return 1
+        }
+    old_csum=$(fetch_artifact ${repo} $rem_file -)
+    [ -z "$old_csum" ] && err old_csum empty
+    new_csum=$(ostree --repo=$sysroot/ostree/repo ls $ref_name -Cd | awk '{print $5}')
+    [ -z "$new_csum" ] && err new_csum empty
+    printc "comparing checksums $old_csum $new_csum..."
     if [ "$new_csum" = "$old_csum" ]; then
-        printc "${pkg} already up to update."
-        echo $pkg >>file.up
+        printc "already up to update."
+        touch file.up
         exit
     fi
     printc "csums different."

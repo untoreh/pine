@@ -18,16 +18,18 @@ which ostree &>/dev/null || ( echo "Not an ostree installation, terminating." &&
 
 ## vars
 repo=untoreh/pine
+os=pine
 ref=trunk
 work=/var/tmp/pine-upgrade
 delta=delta
+bdelta=delta_base
 
 ## funcs
 wrap_up() {
     ## cleanup tmp folder
     rm -rf $work
     ## prune ostree
-    ostree prune --refs-only --keep-younger-than="1 months ago"
+    ostree --os=${os} prune --refs-only --keep-younger-than="1 months ago"
     ## finish
     if $upg; then
         echo -e "$curV updated to:\n$lasV -- $cmt\n@ $(date)\nrebooting..."
@@ -42,53 +44,84 @@ get_delta() {
     [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
     ## download delta
     fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
-    if [ $? != 0 ]; then
+    d_status=$?
+    n_files=$(find $PWD | wc -l)
+    echo $n_files
+    if [ $d_status != 0 -o $n_files -lt 2 ]; then
+        echo "*next* version download failed, fetching the *last* version"
         fetch_artifact ${repo}:${lasV} ${delta}_base.tar $PWD
-        if [ $? != 0 ]; then
-            echo "error: failed downloading the new delta."
+        d_status=$?
+        n_files=$(find $PWD | wc -l)
+        if [ $d_status != 0  ]; then
+            echo "*last* version download failed"
             exit 1
+        elif [ $n_files -lt 2 ]; then
+            echo "*last* version archive was empty (!?), build system failure"
+            exit 1
+        else
+            echo "*last* ($lasV) delta download was succesful"
         fi
+    else
+        echo "*next* ($nexV) delta download was succesful"
     fi
     get_commit
 }
 
 get_commit() {
     ## the delta file name is also the commit number
-    export cmt=$(basename $(find | grep -E [a-z0-9]{64}))
+    echo "looking for commit data in $PWD ..."
+    cmt_path=$(find | grep -E [a-z0-9]{64})
+    [ -n "$cmt_path" ] && export cmt=$(basename $cmt_path)
 }
 
 apply_upgrade() {
     ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
-    upg=$(ostree admin upgrade --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
+    if ostree --os=${os} admin upgrade --override-commit=$cmt 2>&1 | grep -qE "Transaction complete|No update"; then
+        upg=true
+    else
+        upg=false
+    fi
     ## if no upgrade was done
     if ! $upg; then
-        ostree static-delta apply-offline $cmt
-        upg=$(ostree admin upgrade --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
+        ostree  static-delta apply-offline $cmt
+        if ostree --os=${os} admin upgrade --override-commit=$cmt 2>&1 | grep -qE "Transaction complete|No update"; then
+            upg=true
+        else
+            upg=false
+        fi
     fi
 }
 
 ## get the current version
-curV=$(</etc/pine)
+read curV < /etc/pine
+[ -z "$curV" ] && { echo "unable to get the current OS version, broken system."; exit 1; }
+echo "current version is ${curV}"
 
 ## get the latest version on github
-lasV=$(git ls-remote -t git://github.com/${repo}.git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k1nr -k2nr | head -1)
+endpoint=github.com
+lasV=$(git ls-remote -t git://${endpoint}/${repo}.git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k1nr -k2nr | head -1)
+[ -z "$lasV" ] && { echo "unable to fetch the latest version, troubles with ${endpoint}/${repo}"; exit 1; }
+echo "last version is $lasV"
 
 ## compare
-if [ ! $curV = $lasV -o "$1" = force ]; then
+if [ $curV != $lasV -o "$1" = force ]; then
     ## if tmp folder exists an update didn't end properly
     if [ -d $work ]; then
-        cd $work
+        cd $work || { mkdir -p $work; cd $work; } || { echo "couldn't change to directory ${work}"; exit 1; }
         get_commit
         ## we have a delta file, try upgrade
         if [ -n "$cmt" ]; then
+            echo "commit found, applying upgrade"
             apply_upgrade
             ## if upgrade didn't happen delta file might be corrupted
             if [ ! $upg ]; then
+                echo "upgrade failed, fetching delta again."
                 get_delta
                 apply_upgrade
             fi
         else
             ## get the delta file, upgrade
+            echo "no commit found, fetching delta"
             get_delta
             apply_upgrade
         fi

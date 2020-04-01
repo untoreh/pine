@@ -2,78 +2,52 @@
 . ./functions.sh
 
 rootfs=rootfs
-delta="delta"
-cd /srv
+sysroot=/os
 
-rm -rf /os &>/dev/null
-mkdir -p /os
+config_env
+cd $repodir
+clear_sysroot
 
-dd if=/dev/zero of=image.pine bs=512 count=1048576 conv=fsync
-losetup -P /dev/loop0 image.pine
+image_name="image.pine"
+dd if=/dev/zero of=$image_name bs=512 count=1048576 conv=fsync
 
-## https://github.com/moby/moby/issues/27886#issuecomment-417074845
-LOOPDEV=$(losetup --find --show --partscan "${PWD}/image.pine")
+LOOPDEV=$(loop_image "${image_name}")
 
-# drop the first line, as this is our LOOPDEV itself, but we only what the child partitions
-PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
-COUNTER=1
-for i in $PARTITIONS; do
-    MAJ=$(echo $i | cut -d: -f1)
-    MIN=$(echo $i | cut -d: -f2)
-    if [ ! -e "${LOOPDEV}p${COUNTER}" ]; then mknod ${LOOPDEV}p${COUNTER} b $MAJ $MIN; fi
-    COUNTER=$((COUNTER + 1))
-done
+root_part=${LOOPDEV}p3
+swap_part=${LOOPDEV}p2
+boot_part=${LOOPDEV}p1
+make_fs
 
-sfdisk /dev/loop0 < layout.cfg
-mkfs.ext2 -L /boot -I 1024 /dev/loop0p1
-mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 /dev/loop0p3
-mkswap -L swap /dev/loop0p2
+# set vars, mount the partitions
+os_name=pine
+repo_name=pine
+ref_name=trunk
 
-mount /dev/loop0p3 /os
-mkdir -p /os/boot
-mount /dev/loop0p1 /os/boot
+mount_parts
 
-ostree admin init-fs /os
-ostree admin os-init --sysroot=/os pine
-ostree --repo=/os/ostree/repo pull-local /srv/pine trunk
-ostree admin deploy --sysroot=/os --os=pine trunk --karg=root=UUID=`blkid -s UUID -o value /dev/loop0p3` --karg=rootfstype=xfs --karg=rootflags=rw,noatime,nodiratime,largeio,inode64
+# First create the main directories in the ROOT,
+# then setup an OS repository in the new ROOT
+# then pull the data of the prebuilt tree in the OS repo
+ostree admin init-fs $sysroot
+ostree admin os-init --sysroot=$sysroot $os_name
+ostree --repo=$sysroot/ostree/repo pull-local /srv/$repo_name $ref_name
+# then deploy a REF, which will setup the config used by grub to boot
+# the correct REF
+ostree_deploy
 
-dpl=`find /os/ostree/deploy/pine/deploy/ -maxdepth 1 | grep "\.0$"`
-mount --bind $dpl $dpl
-mount --bind /os $dpl/sysroot
-mount --move $dpl /os
-mount /dev/loop0p1 /os/boot
-mount /dev/loop0p1 /os/sysroot/boot
+fake_deploy
 
-mount --bind /dev/ /os/dev
-mount --bind /sys  /os/sys
-mount --bind /proc /os/proc
+install_grub
 
-grub-install /dev/loop0 --root-directory=/os
-ln -sr /os/boot/{grub,grub2}
-chroot /os grub-mkconfig -o /boot/loader.1/grub.cfg
-cd /os/boot/grub && ln -s ../loader/grub.cfg grub.cfg && cd -
+# wrap up
+ostree_fsck
+rev_number=$(ostree --repo=$sysroot/ostree/repo rev-parse $ref_name)
+gen_delta $rev_number empty
+arc_delta $PWD delta_base.tar $rev_number
 
-ostree fsck --repo=/os/ostree/repo
-sync
-
-rev=$(ostree --repo=/os/ostree/repo rev-parse trunk)
-ostree --repo=/os/ostree/repo static-delta generate trunk --empty --inline --min-fallback-size 0 --filename=${rev} | grep -vE "^\.\/"
-tar cf ${delta}_base.tar $rev
-
-while `mountpoint -q /os || cat /proc/mounts | grep loop0` ; do
-        findmnt /os -Rrno TARGET | sort -r | xargs -I {} umount {} &>/dev/null
-        cat /proc/mounts | grep loop0 | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
-        sleep 1
-done
-# xfs_repair /dev/loop0p1
-xfs_repair /dev/loop0p3
-losetup -d /dev/loop/0 &>/dev/null
+unmount_sysroot $LOOPDEV $sysroot
+repair_xfs $boot_part $root_part
+losetup -d $LOOPDEV &>/dev/null
 
 ## checksum and compress
-sha256sum image.pine > image.pine.sum
-tar cvzf image.pine.tgz image.pine image.pine.sum
-## since building from scratch does not have a delta, we create a dumb delta.tar to make travis happy
-# echo 1>dummy && tar cvf delta.tar dummy && rm dummy
-## generate fat delta
-
+csum_arc_image image.pine

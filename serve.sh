@@ -1,22 +1,5 @@
 #!/bin/sh
 
-cleanup() {
-	{
-		umount loroot
-		cd -
-		losetup -d /dev/loop$lon
-	} &>/dev/null
-}
-
-case $1 in
-	-t )
-	trap cleanup SIGINT SIGTERM EXIT ;;
-	-c )
-	cleanup ; losetup -D ; exit ;;
-	* ) ;;
-esac
-
-
 cat <<EOF > /etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
