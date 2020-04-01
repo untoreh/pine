@@ -383,8 +383,6 @@ loop_image() {
     local image_path=$1
     losetup -D "$image_path"
     find /dev/loop*p* -exec rm {} \; 2>/dev/null
-    echo "listing loop devices"
-    find /dev/loop*
     [ -e "$image_path" ] || {
         echo "${FUNCNAME[0]}: image not found"
         exit 1
@@ -396,7 +394,6 @@ loop_image() {
             exit 1
         }
         losetup -P /dev/loop$lon "$image_path"
-        echo $?
         sleep 1
         ## https://github.com/moby/moby/issues/27886#issuecomment-417074845
         LOOPDEV=$(losetup --find --show --partscan "$image_path" 2>/dev/null)

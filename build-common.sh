@@ -57,6 +57,7 @@ mount_parts(){
     else
         nouuid=
     fi
+    printc "command $nouuid $root_part $sysroot"
     mount $nouuid $root_part $sysroot
     mkdir -p $sysroot/boot
     if blkid -t TYPE=xfs $boot_part; then
@@ -64,6 +65,7 @@ mount_parts(){
     else
         nouuid=
     fi
+    printc "command $nouuid $boot_part $sysroot/boot"
     mount $nouuid $boot_part $sysroot/boot
 }
 
