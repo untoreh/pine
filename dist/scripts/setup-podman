@@ -1,0 +1,18 @@
+#!/bin/sh
+
+chroot=/opt/alp
+
+cgroupfs-mount
+modprobe nf_conntrack
+cd $chroot
+if ! mountpoint -q dev; then
+    mount --bind . .
+    mount --bind /dev dev
+    mount --bind /proc proc
+    mount --bind /sys sys
+    mount --bind /lib/modules lib/modules
+fi
+apkc add $chroot podman
+registries_url="https://github.com/containers/image/raw/master/registries.conf"
+registries_file=$chroot/etc/containers/registries.conf
+[ ! -e $registries_filea ] && wget $registries_url -qO- $registries_file

@@ -18,6 +18,19 @@ rse()
     ((eval $(for phrase in "$@"; do echo -n "'$phrase' "; done)) 3>&1 1>&2 2>&3 | sed -e "s/^\(.*\)$/$(echo -en \\033)[31;1m\1$(echo -en \\033)[0m/") 3>&1 1>&2 2>&3
 }
 
+check_vars(){
+    [ -z "$*" ] && return
+    local is_set=0 d
+    for v in $@; do
+        eval "d=\$$v"
+        [ -z "$d" ] && {
+            echo "$v ${message:-not set}"
+            is_set=1
+        }
+    done
+    return $is_set
+}
+
 git_versions() {
     local remote tags
     if [ "$2" = c ]; then
@@ -502,6 +515,81 @@ package_tree(){
 
     ## compress
     tar cvf ${pkg}_ovz.tar ${rev}
+}
+
+## system upgrade
+wrap_up() {
+    ## cleanup tmp folder
+    rm -rf $work
+    ## prune ostree
+    ostree -os=${os} prune --refs-only --keep-younger-than="1 months ago"
+    ## finish
+    if $upg; then
+        date=$(date +%Y-%m-%d)
+        echo -e "$curV updated to:\n$lasV -- $cmt\n@ ${date}\nrebooting..."
+        reboot lock queue -d 10
+    else
+        echo -e "$curV checked for updates.\n@ ${date}"
+    fi
+}
+
+get_delta() {
+    nexV=$(next_release $repo $curV)
+    [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
+    ## download delta
+    fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
+    d_status=$?
+    n_files=$(find $PWD | wc -l)
+    if [ $d_status != 0 -o $n_files -lt 2 ]; then
+        echo "*next* version download failed, fetching the *last* version"
+        fetch_artifact ${repo}:${lasV} ${delta}_base.tar $PWD
+        d_status=$?
+        n_files=$(find $PWD | wc -l)
+        if [ $d_status != 0  ]; then
+            echo "*last* version download failed"
+            exit 1
+        elif [ $n_files -lt 2 ]; then
+            echo "*last* version archive was empty (!?), build system failure"
+            exit 1
+        else
+            echo "*last* ($lasV) delta download was succesful"
+        fi
+    else
+        echo "*next* ($nexV) delta download was succesful"
+    fi
+    get_commit
+}
+
+get_commit() {
+    ## the delta file name is also the commit number
+    echo "looking for commit data in $PWD ..."
+    cmt_path=$(find | grep -E [a-z0-9]{64})
+    if [ -n "$cmt_path" ]; then
+        export cmt=$(basename $cmt_path)
+    else
+        echo "error: no file carried the name of a commit."
+        return 1
+    fi
+}
+
+apply_upgrade() {
+    ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
+    if ostree --os=${os} admin upgrade --override-commit=$cmt 2>&1 | \
+           grep -qE "Transaction complete|No update"; then
+        upg=true
+    else
+        upg=false
+    fi
+    ## if no upgrade was done
+    if ! $upg; then
+        ostree  static-delta apply-offline $cmt
+        if ostree --os=${os} admin upgrade --override-commit=$cmt 2>&1 | \
+               grep -qE "Transaction complete|No update"; then
+            upg=true
+        else
+            upg=false
+        fi
+    fi
 }
 
 ## $@ packages to install

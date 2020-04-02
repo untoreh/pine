@@ -14,9 +14,9 @@
 
 ## sanity check
 which ostree &>/dev/null \
-    || (echo "Not an ostree installation, terminating." && exit 1)
+    || { echo "Not an ostree installation, terminating." ; exit 1; }
 ls /ostree/deploy | grep ovz \
-    || (echo "Not an ovz deployment, terminating." && exit 1)
+    || { echo "Not an ovz deployment, terminating." ; exit 1; }
 # rc-update show default | grep clearlock || exit 1
 
 ## vars
@@ -26,57 +26,11 @@ work=/var/tmp/pine-upgrade
 delta="delta_ovz"
 os="pine_ovz"
 
-## funcs
-wrap_up() {
-    ## cleanup tmp folder
-    rm -rf $work
-    ## prune ostree
-    ostree prune --refs-only --keep-younger-than="1 months ago"
-    ## finish
-    if $upg; then
-        echo -e "$curV updated to:\n$lasV -- $cmt\n@ $(date)\nrebooting..."
-        reboot lock queue -d 10
-    else
-        echo -e "$curV checked for updates.\n@ $(date)"
-    fi
-}
-
-get_delta() {
-    nexV=$(next_release $repo $curV)
-    [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
-    ## download delta
-    fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
-    if [ $? != 0 ]; then
-        fetch_artifact ${repo}:${lasV} ${delta}_base.tar $PWD
-        if [ $? != 0 ]; then
-            echo "error: failed downloading the new delta."
-            exit 1
-        fi
-    fi
-    get_commit
-}
-
-get_commit() {
-    ## the delta file name is also the commit number
-    export cmt=$(basename $(find | grep -E [a-z0-9]{64}) 2>/dev/null)
-    [ -z "$cmt" ] && echo "error: no file carried the name of a commit." && return 1
-}
-
-apply_upgrade() {
-    ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
-    upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
-    ## if no upgrade was done
-    if ! $upg; then
-        ostree static-delta apply-offline $cmt
-        upg=$(ostree admin upgrade --os=${os} --override-commit=$cmt | grep -qE "Transaction complete|No update" && echo true || echo false)
-    fi
-}
-
 ## get the current version
-curV=$(</etc/pine)
-
+read curV < /etc/pine
 ## get the latest version on github
-lasV=$(git ls-remote -t git://github.com/${repo}.git | awk '{print $2}' | cut -d '/' -f 3 | grep -v "\-rc" | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k1nr -k2nr | head -1)
+lasV=$(last_release ${repo})
+check_vars lasV curV
 
 ## compare
 if [ ! $curV = $lasV -o "$1" = force ]; then
