@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 . ./functions.sh
 
 ## ostree workaround

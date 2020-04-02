@@ -252,5 +252,5 @@ echo -n "rebooting in 3..."; sleep 1; echo -n "2..."; sleep 1; echo "1..."; slee
 reboot -f
 CEOF
 chmod +x customize.sh
-#pivot_root $WORK $WORK/mnt 
+
 chroot . /bin/sh -x customize.sh $DEVICE
