@@ -6,11 +6,11 @@ os_name=pine
 config_env
 
 # download image
-cd $image_path
-fetch_pine "${repo}" "$image_path"
+cd $image_dir
+fetch_pine "${repo}" "$image_dir"
 
 # mount on loop device
-LOOPDEV=$(loop_image "${image_path}/image.pine")
+LOOPDEV=$(loop_image "${image_dir}/image.pine")
 
 ref_deploy=ostree
 ref_name=trunk
@@ -53,7 +53,7 @@ ostree_prune
 unmount_sysroot $LOOPDEV $sysroot
 repair_xfs $boot_part $root_part
 losetup -d ${LOOPDEV} &>/dev/null
-mv $image_path/image.pine ./
+mv $image_dir/image.pine ./
 
 ## checksum and compress
 csum_arc_image image.pine

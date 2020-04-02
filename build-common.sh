@@ -13,8 +13,8 @@ config_env(){
     install_tools ostree util-linux wget
     h=$PWD
     repodir="/srv"
-    image_path="imgtmp"
-    mkdir -p $image_path
+    image_dir="imgtmp"
+    mkdir -p $image_dir
 }
 
 clear_sysroot(){
@@ -250,6 +250,8 @@ csum_arc_image(){
     check_vars image_name
     sha256sum $image_name > ${image_name}.sum
     tar cvzf ${image_name}.tgz ${image_name} ${image_name}.sum
+    local image_path=$(realpath $image_name)
+    printc "image saved at ${image_path}"
 }
 
 # maybe fix xfs partitions
