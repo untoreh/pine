@@ -1,0 +1,79 @@
+# Supfile
+version: 0.4
+commands:
+  etcd-docker-service-create:
+    desc: bootstrap a 3 hosts etcd cluster under docker
+    local: |
+      [ ! -d /srv/etcd ] && echo "/srv/etcd not present, terminating." && exit 1
+      [ $(docker node ls -q | wc -l) -lt 3 ] && echo "not enough nodes (<3), or node on leader node, terminating" && exit 1
+      if [ $(docker network ls -f name=$NETWORK -q | wc -l) != 1 ] ; then
+        docker network create  \
+        --attachable  \
+        --driver overlay  \
+        $NETWORK
+      fi
+      docker service create \
+      --mode global \
+      --mount type=bind,source=/etc/ssl/certs,destination=/etc/ssl/certs \
+      --mount type=bind,source=/etc/network-environment,destination=/etc/network-environment \
+      --mount type=bind,source=/srv/etcd,destination=/etcd \
+      --network $NETWORK \
+      --name etcd untoreh/containers:etcd \
+      /etcd/entry
+    once: true
+  etcd-docker-network-prune:
+    run: |
+      docker network prune -f --filter name=$NETWORK
+  etcd-clear:
+    desc: delete docker service and etcd dirs
+    local: |
+      [ $(docker node ls -q | wc -l) -lt 1 ] && echo "please run from a leader node." && exit 1
+      [ "$SURE" != yes ] && echo "Please be sure (sup -e SURE=yes)" && exit 1
+      docker service rm etcd &>/dev/null || true
+      sup -f $SUP_FILE $SUP_NETWORK etcd-docker-network-prune
+      rm /srv/etcd/discovery /srv/etcd/entry
+  etcd-discovery-fetch:
+    desc: fetch an etcd discovery url
+    local: |
+      mkdir -p /srv/etcd
+      wget -q https://discovery.etcd.io/new?size=3 -O /tmp/etcd-discovery
+    once: true
+  etcd-discovery-propagate:
+    desc: parse discovery url into env to save to hosts
+    local: |
+      sup -f $SUP_FILE -e DISCOVERY=$(cat /tmp/etcd-discovery) $SUP_NETWORK etcd-discovery-save
+    once: true
+  etcd-discovery-save:
+    desc: copy the etcd url on the hosts
+    run: echo $DISCOVERY > /srv/etcd/discovery
+  etcd-entries:
+    desc: setup /srv/etcd/entry files based on NODE id
+    run: |
+      mkdir -p /srv/etcd
+      cat <<'EOF' > /srv/etcd/entry
+      #!/bin/sh
+
+      . /etc/network-environment
+
+      [ -z "$NODE" ] && echo "NODE id missing, set in /etc/network-environment" && exit
+      b24=$((NODE % 255))
+      b16=$((NODE / 255))
+      ETCD_ID=$b16$b24
+
+      ETCD_IP=$(printf "$(ip -4 -o a )" | awk '/eth/ { sub ("/..", "", $4); print $4 }' | head -1)
+      DISCOVERY=$(cat /etcd/discovery)
+
+      export $(cat <<VARS
+      ETCD_NAME=etcd${ETCD_ID}
+      ETCD_DATA_DIR=/etcd/lib
+      ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS=http://${ETCD_IP}:2379
+      ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      ETCD_INITIAL_ADVERTISE_PEER_URLS=http://${ETCD_IP}:2380
+      ETCD_DISCOVERY=$DISCOVERY
+      VARS
+      )
+      etcd
+      EOF
+      chmod +x /srv/etcd/entry
+  

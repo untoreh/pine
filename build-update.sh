@@ -20,7 +20,7 @@ sysroot=/upos
 
 mount_parts
 
-## delete deployments and prune before commit
+## delete deployments before commit
 ostree_rm_deploys
 
 ## now commit the new tree to the old repo

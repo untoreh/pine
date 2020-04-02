@@ -27,11 +27,15 @@ clear_sysroot(){
 ## $@ vars names
 check_vars(){
     [ -z "$*" ] && return
+    local is_set=0
     for v in $@; do
         eval "d=\$$v"
-        [ -z "$d" ] && echo "${FUNCNAME[1]:-main}: $v ${message:-not set}"
-        return 1
+        [ -z "$d" ] && {
+            echo "${FUNCNAME[1]:-main}: $v ${message:-not set}"
+            is_set=1
+        }
     done
+    return $is_set
 }
 
 ## create filesystems on root and boot partitions
@@ -75,7 +79,7 @@ fake_deploy(){
     printc "setting up fake deploy"
     # get the REV number of the REF scraping the deployment link farm checkout
     printc "listing deployments paths..."
-    find $sysroot/ostree/deploy/$os_name/deploy/
+    find $sysroot/ostree/deploy/$os_name/deploy/ -maxdepth 1
     dpl=$(find $sysroot/ostree/deploy/$os_name/deploy/ -maxdepth 1 | grep -E "\.[0-9]$")
     check_vars dpl || \
         {
@@ -96,10 +100,11 @@ fake_deploy(){
 # $1 update
 install_grub(){
     local update=$1
-    check_vars sysroot LOOPDEV boot_part
+    check_vars sysroot boot_part
     printc "installing grub on $sysroot"
     # install the grub modules
     if [ -n "$update" ]; then
+        check_vars LOOPDEV
         ## apparently we use i386 grub
         grub_modules=$sysroot/usr/lib/grub/i386-pc/
         grub-install -d $grub_modules ${LOOPDEV} --root-directory=$sysroot
@@ -107,7 +112,7 @@ install_grub(){
         grub-install $boot_part --root-directory=$sysroot
     fi
     # a fix for missing links
-    ln -sr $sysroot/boot/{grub,grub2}
+    ln -sr $sysroot/boot/{grub2,grub}
     # use the OSTree grub scripts to generate the boot config
     loader=$(ls -t $sysroot/boot/ | grep -E "loader\.[0-9]$" | head -1)
     chroot $sysroot grub-mkconfig -o /boot/${loader}/grub.cfg

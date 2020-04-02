@@ -1,0 +1,32 @@
+# Supfile
+version: 0.4
+commands:
+  optbin:
+    desc: add /opt/bin to path
+    run: |
+      sed -r 's#(:?)/opt/bin(:?)#\1#' -i /etc/profile
+      mkdir -p /etc/profile.d /opt/bin
+      echo 'PATH=/opt/bin:$PATH' > /etc/profile.d/optbin.sh
+  optalp:
+     desc: add a local alpine installation in /opt
+     run: |
+       #!/usr/bin/bash -l
+       mkdir -p /opt/alp/etc/apk /opt/alp/usr/lib/apk/db
+       apkc /opt/alp add --initdb alpine-base
+       echo 'PATH=$PATH:/opt/alp/bin:/opt/alp/sbin:/opt/alp/usr/bin:/opt/alp/usr/sbin' > /etc/profile.d/optalp.sh
+  optnetdata:
+      desc: local netdata install
+      run: |
+        #!/usr/bin/bash -l
+        . /etc/profile
+        apkc /opt/alp add netdata
+        mkdir -p /etc/netdata
+        cp /opt/alp/etc/netdata/netdata.conf /etc/netdata/
+        sed -r '/bind to/aconfig directory = /opt/alp/etc/netdata\
+        stock config directory = /opt/alp/usr/lib/netdata/conf.d\
+        plugins directory = /opt/alp/usr/libexec/netdata/plugins.d\
+        web files directory = /opt/alp/usr/share/webapss/netdata\
+        cache directory = /opt/alp/var/cache/netdata\
+        home directory = /opt/alp/var/cache/netdata\
+        lib directory = /opt/alp/var/lib/netdata\
+        log directory = /opt/alp/var/log/netdata\n' -i /etc/netdata/netdata.conf
