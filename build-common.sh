@@ -246,12 +246,14 @@ arc_delta(){
 # $1 image_name
 csum_arc_image(){
     local image_name=$1
+    local target_dir=$2
+    local archive_path="${target_dir}/${image_name}.tgz"
     printc "archiving image $image_name"
-    check_vars image_name
+    check_vars image_name target_dir
     sha256sum $image_name > ${image_name}.sum
-    tar cvzf ${image_name}.tgz ${image_name} ${image_name}.sum
-    local image_path=$(realpath $image_name)
-    printc "image saved at ${image_path}"
+    tar cvzf $archive_path ${image_name} ${image_name}.sum
+    local archive_abs=$(realpath $archive_path)
+    printc "archive saved at $archive_abs"
 }
 
 # maybe fix xfs partitions
