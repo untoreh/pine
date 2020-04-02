@@ -1,0 +1,8 @@
+#!/bin/bash -l
+export -f `declare -F | awk '{print $3}'`
+SUP_FILE=/etc/Supfile
+if $(echo "$@" | grep -qE "\-f\s+[^\s]+\s*") ; then
+    exec /usr/bin/sup.bin -e SUP_FILE=$SUP_FILE $@
+else
+    exec /usr/bin/sup.bin -e SUP_FILE=$SUP_FILE -f $SUP_FILE $@
+fi

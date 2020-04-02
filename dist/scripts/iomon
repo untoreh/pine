@@ -1,0 +1,23 @@
+#!/bin/bash
+
+loop=${IOMON_LOOP:-30}
+device=${IOMON_DEVICE:-sda}
+count=2
+strikes=0
+
+while :; do
+    iostat=$(iostat -d $loop $count)
+    iotail=$(tail -4 <<<"$iostat")
+    tps=$(awk "/$device/"'{print $2}' <<<"$iotail")
+    if [ "${tps//0}" = \. ]; then
+        strikes=$((strikes+1))
+        if [ $strikes -gt 3 ]; then
+            echo "[$(date)]: io stalled for device $device...issueing a reboot" >> /var/log/iomon.log
+            reboot
+        fi
+    else
+        strikes=0
+    fi
+    read -t $loop
+done
+

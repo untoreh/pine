@@ -1,0 +1,22 @@
+#!/bin/bash -l
+
+if [ -n "$SSH_ORIGINAL_COMMAND" ]; then
+    rgx='^(([^=]*=([^[:space:]\\]*)|((\\.)+[^\\[:space:]]*))*)([[:space:]]*[^[:space:]]+)(.*)'
+    [[ "$SSH_ORIGINAL_COMMAND" =~ $rgx ]]
+    if [ -z "$(type -p ${BASH_REMATCH[6]% *})" ]; then
+        eval "$SSH_ORIGINAL_COMMAND"
+    else
+        vars=${BASH_REMATCH[1]}
+        args=${BASH_REMATCH[6]}${BASH_REMATCH[7]}
+        rgx='^[^"'\'']*;|\n'
+        if [[ "$args" =~ $rgx ]]; then ## don't exec multi commands
+            eval "$SSH_ORIGINAL_COMMAND"
+        else
+            eval "$vars exec $args"
+        fi
+    fi
+else
+
+    exec /bin/sh -li
+fi
+
