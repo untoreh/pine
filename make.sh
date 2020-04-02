@@ -140,7 +140,10 @@ chmod +x etc/periodic/daily/system-upgrade
 
 ## BOOT
 flavor="virt"
-apkc add --no-scripts linux-$flavor
+apkc add --no-scripts linux-$flavor || {
+    err "couldn't install kernel"
+    exit 1
+}
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
 chroot $PWD mkinitfs  \
        -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \

@@ -44,7 +44,7 @@ sed -r 's/#?(rc_logger=).*/\1"YES"/' -i etc/rc.conf
 
 ## backup config
 DUP_VER=$(last_version gilbertchen/duplicacy)
-eval 'printf %s \"$(<templates/dup)\"' >etc/conf.d/dup
+eval 'printf %s \"$(<../templates/dup)\"' >etc/conf.d/dup
 
 cp -a ../dist/scripts/consul_nameserver etc/init.d/consul_nameserver
 chmod +x etc/init.d/consul_nameserver
