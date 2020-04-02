@@ -56,5 +56,5 @@ losetup -d ${LOOPDEV} &>/dev/null
 mv $image_dir/image.pine ./
 
 ## checksum and compress
-csum_arc_image image.pine ${image_dir}/../
+csum_arc_image image.pine ${image_dir}/../../
 echo $new_csum >pine.sum
