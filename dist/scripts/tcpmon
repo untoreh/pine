@@ -1,0 +1,7 @@
+#!/bin/sh
+. /etc/profile.d/func.sh || { echo "functions file not found"; exit 1; }
+
+root_path=/opt/alp
+type -q tcpdump || { echo "tcpdump not found"; exit 1; }
+
+exec tcpdump -n -v 'tcp[tcpflags] & (tcp-rst) != 0'

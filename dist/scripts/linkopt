@@ -1,0 +1,15 @@
+#!/bin/sh
+## link an executable installed in /opt chroots to /opt/bin
+link_path=/opt/bin
+[ ! -e $link_path ] && mkdir -p $link_path
+
+root_path=$1
+bin_file=$2
+
+[ -z "$root_path" -o -z "$bin_file" ] && {
+    echo "provide \$root_path and \$bin_file vars."
+    exit 1
+}
+bin_path=$(find "${root_path}*${bin_file}" | tail -1)
+ln -s "${bin_path}" $link_path
+chmod +x "${link_path}/${bin_file}"
