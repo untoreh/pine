@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+
+# ostree needs this to consider a session as booted
+description="Mount ostree booted flag"
+
+depend()
+{
+        need bootmisc
+}
+
+start() {
+        ebegin "creating flag"
+        if grep -q -m1 ostree /proc/cmdline; then
+            touch /run/ostree-booted
+            chmod 640 /run/ostree-booted
+            mount -o bind,private,ro /run/ostree-booted /run/ostree-booted
+        eend $?
+}
+
+stop() {
+        return
+}

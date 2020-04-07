@@ -522,7 +522,7 @@ wrap_up() {
     ## cleanup tmp folder
     rm -rf $work
     ## prune ostree
-    ostree -os=${os} prune --refs-only --keep-younger-than="1 months ago"
+    ostree --os=${os} prune --refs-only --keep-younger-than="1 months ago"
     ## finish
     if $upg; then
         date=$(date +%Y-%m-%d)

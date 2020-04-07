@@ -1,0 +1,16 @@
+#!/bin/sh
+
+. /etc/profile.d/func.sh
+
+rootfs=${1:-/opt/alp}; shift
+echo "Toolbox rootfs set to ${rootfs}..."
+packages=${*:-"python3 rsync"}
+echo "Installing packages ${packages}..."
+
+mkdir -p $rootfs/etc/apk $rootfs/usr/lib/apk/db
+apkc $rootfs add alpine-base
+echo "set -a ; PATH=$PATH:$rootfs/bin:$rootfs/sbin:$rootfs/usr/bin:$rootfs/usr/sbin" \
+     "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib:/usr/lib:$rootfs/lib:$rootfs/usr/lib; set +a" \
+     > /etc/profile.d/optalp.sh
+
+apkc $rootfs $packages

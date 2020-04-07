@@ -48,11 +48,14 @@ echo -n "$newV" >etc/pine
 
 mkdir -p etc/init.d
 
-cp -a ${dist_dir}/scripts/vardirs etc/init.d/vardirs
+cp -a ${dist_dir}/scripts/init.d/vardirs etc/init.d/vardirs
 chmod +x etc/init.d/vardirs
 
-cp -a ${dist_dir}/scripts/knobs etc/init.d/knobs
+cp -a ${dist_dir}/scripts/init.d/knobs etc/init.d/knobs
 chmod +x etc/init.d/knobs
+
+cp -a ${dist_dir}/scripts/init.d/ostree-booted etc/init.d/ostree-booted
+chmod +x etc/init.d/ostree-booted
 
 ## mount-ro env var
 mkdir -p etc/conf.d
@@ -84,10 +87,12 @@ cp -a ${dist_dir}/cfg/limits/core.conf etc/security/limits.d/core.conf
 mkdir -p etc/sudoers.d
 cp -a ${dist_dir}/cfg/sudoers etc/sudoers.d/pine
 
+# mount here as packages setup scripts might require mounts
 mount --bind /sys sys
 mount --bind /proc proc
 mount --bind /dev dev
 
+# packages
 apkc() {
     apk --arch x86_64 --allow-untrusted --root $PWD $@
 }
@@ -105,7 +110,7 @@ rm etc/grub.d/10_linux
 ## grub2 link for ostree compatibility
 ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
 
-## SETUP
+# initial setup
 chpwd() {
     chroot $PWD $@
 }
@@ -120,25 +125,26 @@ chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 chpwd setup-ntp -c busybox
 
-## DROPBEAR OPTIONS
-mkdir -p root/.ssh home/pine/.ssh
+## dropbear options
+mkdir -m 700 -p root/.ssh home/pine/.ssh
 
-## SERVICES
+## services
 for r in $(cat ../runlevels.sh); do
     mkdir -p $(dirname $r)
     ln -srf etc/init.d/$(basename $r) $(echo "$r" | sed 's#^/##')
 done
 
-## UPDATES/REBOOTS
+## updates/reboots
 cp ${dist_dir}/scripts/system-upgrade etc/periodic/daily
 chmod +x etc/periodic/daily/system-upgrade
 
-## GLIB
+
+## glib
 . ../glib.sh $PWD
 . ../extras.sh
 . ../extras_common.sh
 
-## BOOT
+## boot
 flavor="virt"
 apkc add --no-scripts linux-$flavor || {
     err "couldn't install kernel"
@@ -156,7 +162,7 @@ mv boot/vmlinuz-$flavor boot/vmlinuz-$flavor-${cksum}
 mv boot/initramfs-$flavor boot/initramfs-$flavor-${cksum}
 rm tmpboot -rf
 
-## KERNEL MODULES
+## kernel modules
 KVER=$(cat usr/share/kernel/$flavor/kernel.release)
 mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
 if [ -e ../beegfs.ko ]; then
@@ -164,11 +170,10 @@ if [ -e ../beegfs.ko ]; then
 fi
 chpwd depmod $KVER
 
-## FIXES
+# cleanup and fixes
 rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
 
-## CLEANUP
 while $(mountpoint -q ./proc); do
     umount proc
 done
@@ -189,15 +194,14 @@ rm bin -rf && ln -s usr/bin bin
 cp -a --remove-destination sbin/* usr/sbin
 rm sbin -rf && ln -s usr/sbin sbin
 
-## WORKAROUNDS
-## coreutils support for bin -> usr/bin
+# coreutils support for bin -> usr/bin
 cd bin
 ls -l | grep \/coreutils | awk '{print $9}' | xargs -I{} ln -sf coreutils {}
 cd -
 
-## OSTREE
+# commit the rootfs to ostree
 cd /srv
 ostree --repo=pine commit -s "$(date)-build" -b ${ref} --tree=dir="${name}_tree"
 ostree summary -u --repo=pine
 ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' > pine.sum
-#pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d
+## pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d
