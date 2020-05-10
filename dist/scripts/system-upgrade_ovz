@@ -34,6 +34,8 @@ check_vars lasV curV
 
 ## compare
 if [ ! $curV = $lasV -o "$1" = force ]; then
+    # make room for new update
+    del_deployments
     ## if tmp folder exists an update didn't end properly
     if [ -d $work ]; then
         cd $work

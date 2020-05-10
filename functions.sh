@@ -544,6 +544,11 @@ wrap_up() {
     fi
 }
 
+del_deployments() {
+    ostree admin undeploy 1 || ostree admin undeploy 0
+    ostree prune --keep-younger-than=1s
+}
+
 get_delta() {
     nexV=$(next_release $repo $curV)
     [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV

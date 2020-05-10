@@ -3,6 +3,7 @@
 . ./functions.sh
 name=pine_ovz
 ref=trunk
+dist_dir=../dist
 
 ## get release tag
 # newV=`wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | \
@@ -350,7 +351,7 @@ for r in `cat ../runlevels_ovz.sh`; do
 done
 
 ## UPDATES/REBOOTS
-cp ../system-upgrade_ovz etc/periodic/daily/system-upgrade
+cp ${dist_dir}/scripts/system-upgrade_ovz etc/periodic/daily/system-upgrade
 chmod +x etc/periodic/daily/system-upgrade
 
 ## GLIB
