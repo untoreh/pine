@@ -5,14 +5,17 @@ if [ "$1" != lock ] ; then
     exec /bin/busybox reboot $@
 fi
 
+consul=${CONSUL_PATH:-/opt/bin/consul}
+default_max_reboots=3
+
 consul_reboot_clear(){
-    consul kv delete reboot/queue/$IPv4
+    $consul kv delete reboot/queue/$IPv4
 }
 
 consul_reboot(){
     ## get the current allowed queue length (>=1)
-    max=$(consul kv get reboot/max)
-    consul lock -n $max reboot reboot_locker $max
+    max=$($consul kv get reboot/max || echo $default_max_reboots)
+    $consul lock -n $max reboot reboot_locker $max
 }
 
 ## setup vars

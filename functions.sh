@@ -71,14 +71,14 @@ last_release() {
     else
         local latest="/latest"
     fi
-    wget -qO- https://api.github.com/repos/${repo}/releases$latest \
+    wget -qO- https://api.github.com/repos/${repo}/releases$latest$gh_token \
         | awk '/tag_name/ { print $2 }' | grep "$release_type" | head -${offset:-1} | tail -1 | sed -r 's/",?//g'
 }
 
 ## $1 repo $2 tag name
 tag_id() {
     [ -n "$2" ] && tag_name="tags/${2}" || tag_name=latest
-    wget -qO- https://api.github.com/repos/${1}/releases/${tag_name} | grep '"id"' | head -1 | grep -o "[0-9]*"
+    wget -qO- https://api.github.com/repos/${1}/releases/${tag_name}${gh_token} | grep '"id"' | head -1 | grep -o "[0-9]*"
 }
 ## $1 repo $2 old tag $3 new tag
 switch_release_tag(){
@@ -147,7 +147,7 @@ last_release_date() {
     else
         tag="latest"
     fi
-    local date=$(wget -qO- https://api.github.com/repos/${1}/releases/${tag} | grep created_at | head -n 1 | cut -d '"' -f 4)
+    local date=$(wget -qO- https://api.github.com/repos/${1}/releases/${tag}${gh_token} | grep created_at | head -n 1 | cut -d '"' -f 4)
     [ -z "$date" ] && echo 0 && return
     date -d "$date" +%Y%m%d%H%M%S
 }
@@ -192,13 +192,13 @@ fetch_artifact() {
         local repo_fetch=${1/:*} repo_tag=${1/*:} draft= opts=
         [ -z "$repo_tag" -o "$repo_tag" = "$1" ] && repo_tag=releases/latest || repo_tag=releases/tags/${repo_tag}
         [ "$repo_tag" = "releases/tags/last" ] && repo_tag=releases
-        [ "$repo_tag" = "releases/tags/draft" ] && repo_tag=releases/$gh_token && draft=true
+        [ "$repo_tag" = "releases/tags/draft" ] && repo_tag=releases && draft=true
         artf="$2"
         if [ -n "$draft" ]; then
             local data=
             while [ -z "$data" ]; do
-                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
-                sleep 3
+                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag}$gh_token)
+                sleep 
             done
             art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)${gh_token}
             trap "unset -f wget" SIGINT SIGTERM SIGKILL SIGHUP RETURN EXIT
@@ -522,7 +522,7 @@ wrap_up() {
     ## cleanup tmp folder
     rm -rf $work
     ## prune ostree
-    ostree --os=${os} prune --refs-only --keep-younger-than="1 months ago"
+    ostree prune --refs-only --keep-younger-than="1 months ago"
     ## finish
     if $upg; then
         date=$(date +%Y-%m-%d)
@@ -574,7 +574,7 @@ get_commit() {
 
 apply_upgrade() {
     ## first try to upgrade, if no upgrade is available apply the delta and upgrade again
-    if ostree --os=${os} admin upgrade --override-commit=$cmt 2>&1 | \
+    if ostree admin upgrade --os=${os} --override-commit=$cmt 2>&1 | \
            grep -qE "Transaction complete|No update"; then
         upg=true
     else
@@ -583,7 +583,7 @@ apply_upgrade() {
     ## if no upgrade was done
     if ! $upg; then
         ostree  static-delta apply-offline $cmt
-        if ostree --os=${os} admin upgrade --override-commit=$cmt 2>&1 | \
+        if ostree admin upgrade --os=${os} --override-commit=$cmt 2>&1 | \
                grep -qE "Transaction complete|No update"; then
             upg=true
         else

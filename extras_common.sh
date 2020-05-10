@@ -23,8 +23,6 @@ cp -a ../Supfile etc/
 cp -a ../sup etc/
 ## touch hosts files to not let sup fail on local hostsless execution
 touch etc/cluster etc/leaders etc/workers
-cp -a ../dist/scripts/sup usr/bin/sup
-chmod +x usr/bin/sup
 
 ## ssh wrapper to load environment vars which dropbear does not support
 cp -a ../dist/scripts/ssheval usr/bin/ssheval
@@ -48,13 +46,3 @@ eval 'echo "'"$(<../templates/dup)"'"' >etc/conf.d/dup
 
 cp -a ../dist/scripts/consul_nameserver etc/init.d/consul_nameserver
 chmod +x etc/init.d/consul_nameserver
-
-## CONTAINERPILOT
-copi_repo="joyent/containerpilot"
-#COPI_VERSION=$(last_version $copi_repo)
-fetch_artifact "$copi_repo" ".*.tar.gz" usr/bin
-chmod +x usr/bin/containerpilot
-cp ../templates/containerpilot.json5 etc/containerpilot.json5
-
-## NETDATA
-# apkc add netdata
