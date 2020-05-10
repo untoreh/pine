@@ -112,7 +112,7 @@ install_grub(){
         grub-install $boot_part --root-directory=$sysroot
     fi
     # a fix for missing links
-    ln -sr $sysroot/boot/{grub2,grub}
+    ln -sr $sysroot/boot/{grub,grub2}
     # use the OSTree grub scripts to generate the boot config
     loader=$(ls -t $sysroot/boot/ | grep -E "loader\.[0-9]$" | head -1)
     chroot $sysroot grub-mkconfig -o /boot/${loader}/grub.cfg
