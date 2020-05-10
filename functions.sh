@@ -373,6 +373,7 @@ copy_image_cfg() {
 # $1 repo
 # $2 dest
 fetch_pine() {
+    set -x
     check_vars repo
     repo=$1
     dest=$2
@@ -388,6 +389,7 @@ fetch_pine() {
 	          exit 1
         fi
     fi
+    set +x
 }
 
 # mount a image on a loop device
