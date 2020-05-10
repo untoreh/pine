@@ -108,7 +108,7 @@ next_release() {
         | cut -d '/' -f 3 | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k2n)
     ## loop until we find a valid release
     while
-        cur_tag=$(echo "$near_tags" | awk '/'$cur_tag'/{getline; print $0}')
+        cur_tag=$(echo "$near_tags" | awk '/'"$cur_tag"'/{getline; print; exit }')
         echo "looking for releases tagged $cur_tag" 1>&2
         next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag})
         [ -z "$next_release" -a -n "$cur_tag" ]
@@ -187,7 +187,7 @@ diff_env(){
 ## $3 dest dir
 ## $4 extra wget options
 fetch_artifact() {
-    trap "unset -f wget_partial" RETURN
+    trap "unset -f wget_partial fetch_releases_data" RETURN
     # downloading assets while providing a token gives bad requests
     function wget_partial(){ /usr/bin/wget $@; }
     if [ "${1:0:4}" = "http" ]; then
@@ -201,20 +201,17 @@ fetch_artifact() {
         [ "$repo_tag" = "releases/tags/last" ] && repo_tag=releases
         [ "$repo_tag" = "releases/tags/draft" ] && repo_tag=releases && draft=true
         artf="$2"
+        local data= tries=0
+        while [ -z "$data" ]; do
+            data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
+            tries=$((tries+1))
+            [ $tries -gt 3 ] && { err "couldn't fetch releases data"; return 1; }
+            sleep $tries
+        done
         if [ -n "$draft" ]; then
-            local data=
-            while [ -z "$data" ]; do
-                data=$(wget -O- https://api.github.com/repos/${repo_fetch}/${repo_tag})
-                sleep 3
-            done
             art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)
             wget_partial(){ /usr/bin/wget --header "Accept: application/octet-stream" $@; }
         else
-            local data=
-            while [ -z "$data" ]; do
-                data=$(wget -O- https://api.github.com/repos/${repo_fetch}/${repo_tag})
-                sleep 3
-            done
             art_url=$(echo "$data"| grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
         fi
         dest="$3"
@@ -545,33 +542,40 @@ wrap_up() {
 }
 
 del_deployments() {
+    # make sure the ostree flag is set
+    touch /run/ostree-booted
     ostree admin undeploy 1 || ostree admin undeploy 0
     ostree prune --keep-younger-than=1s
 }
 
 get_delta() {
-    nexV=$(next_release $repo $curV)
-    [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
-    ## download delta
-    fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
-    d_status=$?
-    n_files=$(find $PWD | wc -l)
-    if [ $d_status != 0 -o $n_files -lt 2 ]; then
-        echo "*next* version download failed, fetching the *last* version"
+    if [ -z "$1" ]; then
+        nexV=$(next_release $repo $curV)
+        [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
+        ## download delta
+        fetch_artifact ${repo}:${nexV} ${delta}.tar $PWD
+        d_status=$?
+        n_files=$(find $PWD | wc -l)
+        if [ $d_status != 0 -o $n_files -lt 2 ]; then
+            next_v_failed=y
+            err "*next* version download failed, fetching the *last* version"
+        fi
+    fi
+    if [ -n "$1" -o -n "$next_v_failed" ]; then
         fetch_artifact ${repo}:${lasV} ${delta}_base.tar $PWD
         d_status=$?
         n_files=$(find $PWD | wc -l)
         if [ $d_status != 0  ]; then
-            echo "*last* version download failed"
+            err "*last* version download failed"
             exit 1
         elif [ $n_files -lt 2 ]; then
-            echo "*last* version archive was empty (!?), build system failure"
+            err "*last* version archive was empty (!?), build system failure"
             exit 1
         else
-            echo "*last* ($lasV) delta download was succesful"
+            printc "*last* ($lasV) delta download was succesful"
         fi
     else
-        echo "*next* ($nexV) delta download was succesful"
+        printc "*next* ($nexV) delta download was succesful"
     fi
     get_commit
 }

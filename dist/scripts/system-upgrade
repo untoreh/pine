@@ -61,6 +61,13 @@ if [ $curV != $lasV -o "$1" = force ]; then
         ## get the delta file, upgrade
         get_delta
         apply_upgrade
+        if ! $upg; then
+            # clear orphaned deltas
+            rm -f $work/*
+            get_delta last
+            apply_upgrade
+        fi
+        $upg || err "Upgrade from $curV to ${nexV}..${lasV} failed"
     fi
 fi
 
