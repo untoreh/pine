@@ -14,6 +14,7 @@ start() {
             touch /run/ostree-booted
             chmod 640 /run/ostree-booted
             mount -o bind,private,ro /run/ostree-booted /run/ostree-booted
+        fi
         eend $?
 }
 
