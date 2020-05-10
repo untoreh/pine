@@ -187,7 +187,7 @@ diff_env(){
 ## $3 dest dir
 ## $4 extra wget options
 fetch_artifact() {
-    trap "unset -f wget_partial" SIGINT SIGTERM SIGKILL SIGHUP RETURN EXIT
+    trap "unset -f wget_partial" RETURN
     # downloading assets while providing a token gives bad requests
     function wget_partial(){ /usr/bin/wget $@; }
     if [ "${1:0:4}" = "http" ]; then
@@ -204,7 +204,7 @@ fetch_artifact() {
         if [ -n "$draft" ]; then
             local data=
             while [ -z "$data" ]; do
-                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
+                data=$(wget -O- https://api.github.com/repos/${repo_fetch}/${repo_tag})
                 sleep 3
             done
             art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)
@@ -212,7 +212,7 @@ fetch_artifact() {
         else
             local data=
             while [ -z "$data" ]; do
-                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
+                data=$(wget -O- https://api.github.com/repos/${repo_fetch}/${repo_tag})
                 sleep 3
             done
             art_url=$(echo "$data"| grep browser_download_url | grep ${artf} | head -n 1 | cut -d '"' -f 4)
@@ -382,7 +382,9 @@ fetch_pine() {
     check_vars repo
     repo=$1
     dest=$2
+    set -x
     fetch_artifact ${repo} image.pine.tgz $dest
+    set +x
     if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
         printc "no latest image found, trying last image available."
         ## try the last if there is no latest
