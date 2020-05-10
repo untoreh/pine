@@ -1,7 +1,11 @@
 #!/bin/bash
 
 shopt -s expand_aliases &>/dev/null
-[ ${GIT_TOKEN:-} ] && gh_token="?access_token=${GIT_TOKEN}"
+if [ -n "${GIT_TOKEN}" ]; then
+    function wget() {
+        /usr/bin/wget --header "Authorization: token ${GIT_TOKEN}" $@
+    }
+fi
 cn="\033[1;32;40m"
 cf="\033[0m"
 printc() {
@@ -71,14 +75,14 @@ last_release() {
     else
         local latest="/latest"
     fi
-    wget -qO- https://api.github.com/repos/${repo}/releases$latest$gh_token \
+    wget -qO- https://api.github.com/repos/${repo}/releases$latest \
         | awk '/tag_name/ { print $2 }' | grep "$release_type" | head -${offset:-1} | tail -1 | sed -r 's/",?//g'
 }
 
 ## $1 repo $2 tag name
 tag_id() {
     [ -n "$2" ] && tag_name="tags/${2}" || tag_name=latest
-    wget -qO- https://api.github.com/repos/${1}/releases/${tag_name}${gh_token} | grep '"id"' | head -1 | grep -o "[0-9]*"
+    wget -qO- https://api.github.com/repos/${1}/releases/${tag_name} | grep '"id"' | head -1 | grep -o "[0-9]*"
 }
 ## $1 repo $2 old tag $3 new tag
 switch_release_tag(){
@@ -106,7 +110,7 @@ next_release() {
     while
         cur_tag=$(echo "$near_tags" | awk '/'$cur_tag'/{getline; print $0}')
         echo "looking for releases tagged $cur_tag" 1>&2
-        next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag}${gh_token})
+        next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag})
         [ -z "$next_release" -a -n "$cur_tag" ]
     do :
     done
@@ -147,7 +151,7 @@ last_release_date() {
     else
         tag="latest"
     fi
-    local date=$(wget -qO- https://api.github.com/repos/${1}/releases/${tag}${gh_token} | grep created_at | head -n 1 | cut -d '"' -f 4)
+    local date=$(wget -qO- https://api.github.com/repos/${1}/releases/${tag} | grep created_at | head -n 1 | cut -d '"' -f 4)
     [ -z "$date" ] && echo 0 && return
     date -d "$date" +%Y%m%d%H%M%S
 }
@@ -197,12 +201,12 @@ fetch_artifact() {
         if [ -n "$draft" ]; then
             local data=
             while [ -z "$data" ]; do
-                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag}$gh_token)
-                sleep 
+                data=$(wget -qO- https://api.github.com/repos/${repo_fetch}/${repo_tag})
+                sleep 3
             done
-            art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)${gh_token}
+            art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)
             trap "unset -f wget" SIGINT SIGTERM SIGKILL SIGHUP RETURN EXIT
-            wget(){ /usr/bin/wget --header "Accept: application/octet-stream" $@; }
+            wget_partial(){ wget --header "Accept: application/octet-stream" $@; }
         else
             local data=
             while [ -z "$data" ]; do
@@ -215,10 +219,12 @@ fetch_artifact() {
         shift 3
     fi
     echo "$art_url" | grep "://" || { err "no url found for ${artf} at ${repo_fetch}:${repo_tag}"; return 1; }
+    # one case needs another wrapper, define if not
+    type -p wget_partial || wget_partial(){ wget $@; }
     ## if no destination dir stream to stdo
     case "$dest" in
         "-")
-        wget $@ $art_url -qO-
+        wget_partial $@ $art_url -qO-
         ;;
         "-q")
         return 0
@@ -226,16 +232,16 @@ fetch_artifact() {
         *)
         mkdir -p $dest
         if echo "$artf" | grep -E "(gz|tgz|xz|7z)$"; then
-            wget $@ $opts $art_url -qO- | tar xzf - -C $dest
+            wget_partial $@ $opts $art_url -qO- | tar xzf - -C $dest
         else
             if echo "$artf" | grep -E "zip$"; then
-                wget $@ $hader $art_url -qO artifact.zip && unzip artifact.zip -d $dest
+                wget_partial $@ $hader $art_url -qO artifact.zip && unzip artifact.zip -d $dest
                 rm artifact.zip
             else
                 if echo "$artf" | grep -E "bz2$"; then
-                    wget $@ $opts $art_url -qO- | tar xjf - -C $dest
+                    wget_partial $@ $opts $art_url -qO- | tar xjf - -C $dest
                 else
-                    wget $@ $opts $art_url -qO- | tar xf - -C $dest
+                    wget_partial $@ $opts $art_url -qO- | tar xf - -C $dest
                 fi
             fi
         fi
@@ -377,11 +383,15 @@ fetch_pine() {
     repo=$1
     dest=$2
     fetch_artifact ${repo} image.pine.tgz $dest
-    if [ ! -f $dest/image.pine ]; then
+    if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
         printc "no latest image found, trying last image available."
         ## try the last if there is no latest
         ## offset by 1 since the last tag is the one being build
         lasV=$(last_release ${repo} offset 2)
+        if [ -z "$lasV" ]; then
+            err "couldn't determine the last version for ${repo}"
+            exit 1
+        fi
         fetch_artifact ${repo}:${lasV} image.pine.tgz $dest
         if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
 	          err "failed downloading previous image, terminating."
