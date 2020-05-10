@@ -12,16 +12,7 @@ cp -a ../dist/scripts/reboot_locker sbin/
 cp -a ../dist/scripts/reboot_try_queue sbin/
 chmod +x sbin/reboot sbin/reboot_locker sbin/reboot_try_queue
 
-## SUP
-## - the sup command is wrapped to use a default Supfile script located in etc/Supfile
-## for common utilities like bootstrapping an etcd cluster
-mkdir -p /go
-export GOPATH=/go GOROOT=/usr/lib/go
-go get -u github.com/pressly/sup/cmd/sup
-mv /go/bin/sup usr/bin/sup.bin
-cp -a ../Supfile etc/
-cp -a ../sup etc/
-## touch hosts files to not let sup fail on local hostsless execution
+## basic files for cluster management
 touch etc/cluster etc/leaders etc/workers
 
 ## ssh wrapper to load environment vars which dropbear does not support
