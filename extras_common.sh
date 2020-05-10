@@ -18,6 +18,10 @@ touch etc/cluster etc/leaders etc/workers
 ## ssh wrapper to load environment vars which dropbear does not support
 cp -a ../dist/scripts/ssheval usr/bin/ssheval
 chmod +x usr/bin/ssheval
+# DROPBEAR OPTIONS
+mkdir -m 700 -p root/.ssh home/pine/.ssh
+# increase default window size
+echo "DROPBEAR_OPTS=\"-W 1MB\"" > /etc/conf.d/dropbear
 
 ## iomon script: some VMs experience I/O failure, use iostat to monitor potential stalls and reboot on occasion
 cp -a ../dist/scripts/iomon usr/bin/iomon

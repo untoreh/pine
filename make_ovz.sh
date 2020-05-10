@@ -343,9 +343,6 @@ chpwd setup-hostname $hostname
 chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 
-## DROPBEAR OPTIONS
-mkdir -p /root/.ssh /home/pine/.ssh
-
 ## SERVICES
 for r in `cat ../runlevels_ovz.sh`; do
     mkdir -p `dirname $r`

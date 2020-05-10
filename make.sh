@@ -125,11 +125,6 @@ chpwd setup-timezone -z CET
 chpwd setup-sshd -c dropbear
 chpwd setup-ntp -c busybox
 
-## dropbear options
-mkdir -m 700 -p root/.ssh home/pine/.ssh
-# increase default window size
-sed -r 's/_OPTS="(.*)"/_OPTS="\1 -W 1MB"/' < /etc/conf.d/dropbear
-
 ## services
 for r in $(cat ../runlevels.sh); do
     mkdir -p $(dirname $r)
