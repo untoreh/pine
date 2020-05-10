@@ -187,6 +187,9 @@ diff_env(){
 ## $3 dest dir
 ## $4 extra wget options
 fetch_artifact() {
+    trap "unset -f wget_partial" SIGINT SIGTERM SIGKILL SIGHUP RETURN EXIT
+    # downloading assets while providing a token gives bad requests
+    function wget_partial(){ /usr/bin/wget $@; }
     if [ "${1:0:4}" = "http" ]; then
         art_url="$1"
         artf=$(basename $art_url)
@@ -205,8 +208,7 @@ fetch_artifact() {
                 sleep 3
             done
             art_url=$(echo "$data" | grep "${artf}" -B 3 | grep '"url"' | head -n 1 | cut -d '"' -f 4)
-            trap "unset -f wget" SIGINT SIGTERM SIGKILL SIGHUP RETURN EXIT
-            wget_partial(){ wget --header "Accept: application/octet-stream" $@; }
+            wget_partial(){ /usr/bin/wget --header "Accept: application/octet-stream" $@; }
         else
             local data=
             while [ -z "$data" ]; do
@@ -219,8 +221,6 @@ fetch_artifact() {
         shift 3
     fi
     echo "$art_url" | grep "://" || { err "no url found for ${artf} at ${repo_fetch}:${repo_tag}"; return 1; }
-    # one case needs another wrapper, define if not
-    type -p wget_partial || wget_partial(){ wget $@; }
     ## if no destination dir stream to stdo
     case "$dest" in
         "-")
@@ -398,6 +398,7 @@ fetch_pine() {
 	          exit 1
         fi
     fi
+    printc "finished downloading image"
 }
 
 # mount a image on a loop device
