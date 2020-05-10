@@ -377,7 +377,7 @@ fetch_pine() {
     repo=$1
     dest=$2
     fetch_artifact ${repo} image.pine.tgz $dest
-    if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
+    if [ ! -f $dest/image.pine ]; then
         printc "no latest image found, trying last image available."
         ## try the last if there is no latest
         ## offset by 1 since the last tag is the one being build
