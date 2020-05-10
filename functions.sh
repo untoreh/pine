@@ -382,9 +382,7 @@ fetch_pine() {
     check_vars repo
     repo=$1
     dest=$2
-    set -x
     fetch_artifact ${repo} image.pine.tgz $dest
-    set +x
     if [ ! -f $dest/image.pine -o "$?" != 0 ]; then
         printc "no latest image found, trying last image available."
         ## try the last if there is no latest
