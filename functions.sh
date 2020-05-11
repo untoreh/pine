@@ -544,8 +544,11 @@ wrap_up() {
 del_deployments() {
     # make sure the ostree flag is set
     touch /run/ostree-booted
+    # dangling tmp files can make commands fail if no space is available
+    rm -rf /ostree/repo/tmp/staging-*
     ostree admin undeploy 1 || ostree admin undeploy 0
     ostree prune --keep-younger-than=1s
+    ostree admin cleanup
 }
 
 get_delta() {
