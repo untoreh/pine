@@ -41,3 +41,6 @@ eval 'echo "'"$(<../templates/dup)"'"' >etc/conf.d/dup
 
 cp -a ../dist/scripts/consul_nameserver etc/init.d/consul_nameserver
 chmod +x etc/init.d/consul_nameserver
+
+## tmux restart script to make sure to kill all children
+cp ../dist/scripts/usr/bin/tmux-restart-server usr/bin/

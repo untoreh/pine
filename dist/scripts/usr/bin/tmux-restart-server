@@ -1,0 +1,9 @@
+#!/bin/sh
+
+pid=$(tmux display-message -pF '#{pid}')
+
+children=$(pstree -p $pid | grep -Eo '\([0-9]+\)' | grep -Eo '[0-9]+')
+
+kill -9 $pid $children
+
+tmux start-server
