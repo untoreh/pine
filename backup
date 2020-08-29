@@ -13,8 +13,8 @@ type dup 1>/dev/null || { echo "error: backup tool not found on system!"; exit 1
 cd /opt/dup/repo || { echo "error: backup repository not found!"; exit 1; }
 
 ## first prune
-dup prune -keep 0:7 -threads "$threads"
+dup prune -keep 0:7 -threads "$threads" -storage ${STORAGE_NAME:-default}
 
 ## then backup
-dup backup -stats -threads "$threads" -storage default
+dup backup -stats -threads "$threads" -storage ${STORAGE_NAME:-default}
 
