@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+
+# ostree needs this to consider a session as booted
+description="Enable zram"
+dev=/dev/zram0
+command=/etc/zram
+
+depend() {
+	need bootmisc modules
+}
+
+start() {
+	ebegin "setting zram to 9/10 of available ram"
+	$command
+	eend $?
+}
+
+stop() {
+	ebegin "turning off zram"
+	swapoff $dev
+	rmmod zram
+	eend $?
+}

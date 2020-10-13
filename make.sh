@@ -19,13 +19,13 @@ mkdir -p /srv/${name}_tree
 cd /srv/${name}_tree
 
 while $(mountpoint -q ./proc); do
-    umount proc
+	umount proc
 done
 while $(mountpoint -q ./dev); do
-    umount dev
+	umount dev
 done
 while $(mountpoint -q ./sys); do
-    umount sys
+	umount sys
 done
 
 rm -rf ./*
@@ -56,6 +56,11 @@ chmod +x etc/init.d/knobs
 
 cp -a ${dist_dir}/scripts/init.d/ostree-booted etc/init.d/ostree-booted
 chmod +x etc/init.d/ostree-booted
+
+# zram
+cp -a ${dist_dir}/scripts/init.d/zram etc/init.d/zram
+cp -a ${dist_dir}/scripts/zram etc/zram
+chmod +x etc/init.d/zram etc/zram
 
 ## mount-ro env var
 mkdir -p etc/conf.d
@@ -94,16 +99,16 @@ mount --bind /dev dev
 
 # packages
 apkc() {
-    apk --arch x86_64 --allow-untrusted --root $PWD $@
+	apk --arch x86_64 --allow-untrusted --root $PWD $@
 }
 
-apkc add --initdb --update-cache alpine-base sudo tzdata  \
- mkinitfs xfsprogs grub-bios \
- util-linux binutils coreutils blkid multipath-tools  \
- ca-certificates wget ethtool iptables  \
- ostree git  \
- htop iftop bash sysstat tmux mosh-server \
- dropbear-ssh dropbear-scp openssh-sftp-server
+apkc add --initdb --update-cache alpine-base sudo tzdata \
+	mkinitfs xfsprogs grub-bios \
+	util-linux binutils coreutils blkid multipath-tools \
+	ca-certificates wget ethtool iptables \
+	ostree git \
+	htop iftop bash sysstat tmux mosh-server \
+	dropbear-ssh dropbear-scp openssh-sftp-server
 
 ## fix for grub without syslinux
 rm etc/grub.d/10_linux
@@ -112,7 +117,7 @@ ln -sr usr/sbin/{grub-mkconfig,grub2-mkconfig}
 
 # initial setup
 chpwd() {
-    chroot $PWD $@
+	chroot $PWD $@
 }
 
 hostname=pine
@@ -127,14 +132,13 @@ chpwd setup-ntp -c busybox
 
 ## services
 for r in $(cat ../runlevels.sh); do
-    mkdir -p $(dirname $r)
-    ln -srf etc/init.d/$(basename $r) $(echo "$r" | sed 's#^/##')
+	mkdir -p $(dirname $r)
+	ln -srf etc/init.d/$(basename $r) $(echo "$r" | sed 's#^/##')
 done
 
 ## updates/reboots
 cp ${dist_dir}/scripts/system-upgrade etc/periodic/daily
 chmod +x etc/periodic/daily/system-upgrade
-
 
 ## glib
 . ../glib.sh $PWD
@@ -144,13 +148,13 @@ chmod +x etc/periodic/daily/system-upgrade
 ## boot
 flavor="virt"
 apkc add --no-scripts linux-$flavor || {
-    err "couldn't install kernel"
-    exit 1
+	err "couldn't install kernel"
+	exit 1
 }
 patch usr/share/mkinitfs/initramfs-init ../initramfs-ostree.patch
-chroot $PWD mkinitfs  \
-       -F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio"  \
-       $(basename $(ls -d lib/modules/*))
+chroot $PWD mkinitfs \
+	-F "ata base cdrom ext2 ext3 ext4 xfs keymap kms mmc raid scsi usb virtio" \
+	$(basename $(ls -d lib/modules/*))
 mv boot tmpboot && mkdir boot
 cp -a tmpboot/vmlinuz-$flavor boot/
 cp -a tmpboot/initramfs-$flavor boot/
@@ -163,7 +167,7 @@ rm tmpboot -rf
 KVER=$(cat usr/share/kernel/$flavor/kernel.release)
 mkdir -p lib/modules/${KVER}/kernel/fs/beegfs
 if [ -e ../beegfs.ko ]; then
-    cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
+	cp -a ../beegfs.ko lib/modules/${KVER}/kernel/fs/beegfs/
 fi
 chpwd depmod $KVER
 
@@ -172,13 +176,13 @@ rm -rf lib/rc/cache
 ln -s /var/cache/rc lib/rc/cache
 
 while $(mountpoint -q ./proc); do
-    umount proc
+	umount proc
 done
 while $(mountpoint -q ./dev); do
-    umount dev
+	umount dev
 done
 while $(mountpoint -q ./sys); do
-    umount sys
+	umount sys
 done
 rm dev var run etc -rf
 mkdir -p dev var run usr/lib usr/bin usr/sbin
@@ -200,5 +204,5 @@ cd -
 cd /srv
 ostree --repo=pine commit -s "$(date)-build" -b ${ref} --tree=dir="${name}_tree"
 ostree summary -u --repo=pine
-ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' > pine.sum
+ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' >pine.sum
 ## pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d

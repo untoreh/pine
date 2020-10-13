@@ -1,0 +1,15 @@
+#!/bin/sh
+dev=${1:-/dev/zram0}
+
+modprobe zram
+
+mem=$(grep -i memtotal </proc/meminfo | awk '{print $2}')
+
+mem_ram=$((mem / 10 * 9)) # set size to 9/10 of avail ram
+algo=zstd
+prio=9         # use high priority
+dev=/dev/zram0 # assume one device
+
+zramctl --find --size $mem_ram --algorithm zstd
+mkswap $dev
+swapon -p $prio $dev
