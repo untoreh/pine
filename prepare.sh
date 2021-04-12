@@ -7,10 +7,11 @@ ln -s /usr/sbin/grub-mkconfig /usr/sbin/grub2-mkconfig
 apk --update-cache upgrade
 
 apk add \
-    bash \
+	bash \
 	wget \
 	curl \
 	git \
+	patch \
 	unzip \
 	xz \
 	coreutils \
@@ -24,7 +25,7 @@ apk add \
 	ostree \
 	grub-bios \
 	xfsprogs \
-  e2fsprogs \
+	e2fsprogs \
 	squashfs-tools \
 	go musl-dev make linux-headers
 
