@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - develop
-  create:
+    tags:
+      - '*'
 jobs:
   docker:
     runs-on: ubuntu-18.04
