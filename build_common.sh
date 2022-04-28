@@ -277,7 +277,7 @@ compare_pine_csums() {
             return 1
         }
     # the last version is the one being built
-    csum_V=$(last_version offset 2)
+    csum_V=$(last_release ${repo:-untoreh/pine} offset 2)
     old_csum=$(fetch_artifact ${repo}:$csum_V $rem_file -)
     [ -z "$old_csum" ] && err old_csum empty
     new_csum=$(ostree --repo=$sysroot/ostree/repo ls $ref_name -Cd | awk '{print $5}')

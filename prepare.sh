@@ -32,4 +32,7 @@ apk add \
 . ./functions.sh
 . ./glib.sh
 
-git config --global --add safe.directory /srv
+# this script is executed inside the container as root
+# while the mounted repository is owned by the worker user
+mkdir $HOME
+git config --add safe.directory /srv

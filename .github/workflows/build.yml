@@ -18,10 +18,9 @@ jobs:
           ## limits ssh access and adds the ssh public keys of the listed GitHub users
           limit-access-to-users: untoreh
       - run: . ./env.sh
-      - run: >-
-          docker run --env-file build.env -d --name pinect -v $PWD:/srv -v
-          /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv
-          alpine:latest /bin/sleep 36000
+      - run: ./start-container
       - run: docker exec pinect ./prepare.sh
       - run: docker exec pinect ./repo.sh
       - run: docker exec pinect ./make.sh
+      - run: docker exec pinect ./make_ovz.sh
+      - run: docker exec pinect ./make_update.sh
