@@ -42,7 +42,7 @@ git_versions() {
     else
         remote="https://github.com/$1.git"
     fi
-    printc "fetching git versoin with ls-remote"
+    printc "fetching git version with ls-remote"
     tags=$(git ls-remote -t "$remote")
     tags=$(echo "$tags" | awk '{print $2}')
     tags=$(echo "$tags" | cut -d '/' -f 3)

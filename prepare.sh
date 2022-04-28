@@ -31,3 +31,5 @@ apk add \
 
 . ./functions.sh
 . ./glib.sh
+
+git config --global --add safe.directory /srv
