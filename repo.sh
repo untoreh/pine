@@ -11,5 +11,7 @@ init_repo() {
     ostree --repo=${name} commit -s $(date)'-build' -b $ref --tree=dir=${name}_tree
 }
 
+printc "init repo pine"
 init_repo pine
+printc "init repo ovz"
 init_repo pine_ovz
