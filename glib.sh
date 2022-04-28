@@ -1,5 +1,6 @@
 #!/bin/sh
 
+printc "installing glibc"
 mount -o remount,ro /proc &>/dev/null
 ## GLIB
 GLIB_VERSION=$(last_version sgerrand/alpine-pkg-glibc)
