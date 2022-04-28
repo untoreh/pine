@@ -51,4 +51,4 @@ repair_xfs $boot_part $root_part
 losetup -d $LOOPDEV &>/dev/null
 
 ## checksum and compress
-csum_arc_image image.pine
+csum_arc_image image.pine /srv

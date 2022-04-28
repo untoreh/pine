@@ -238,6 +238,7 @@ arc_delta(){
         return 1
     }
     tar cf $arc_name $delta_name
+    printc "saved delta at $arg_name (cwd: $PWD)"
     rm $delta_name
     cd -
 }

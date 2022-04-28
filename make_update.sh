@@ -2,7 +2,7 @@
 
 . ./functions.sh
 
-if [ "\${COMMIT_MSG/scratch-build}" != "\${COMMIT_MSG}" ]; then
+if [ "${COMMIT_MSG/scratch-build}" != "${COMMIT_MSG}" ]; then
     printc "this is a scratch build..."
     ./init/build.sh
     printc "ovz..."
