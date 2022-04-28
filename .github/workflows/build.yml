@@ -1,0 +1,16 @@
+name: Pine Builder
+'on':
+  push:
+    branches:
+      - develop
+jobs:
+  docker:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: . ./env.sh
+      - run: >-
+          docker run --env-file build.env -d --name pinect -v $PWD:/srv -v
+          /dev:/dev -v /sys:/sys --privileged --cap-add=ALL -w /srv
+          alpine:latest /bin/sleep 36000
+      - run: docker exec pinect ./run.sh
