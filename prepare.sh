@@ -34,5 +34,6 @@ apk add \
 
 # this script is executed inside the container as root
 # while the mounted repository is owned by the worker user
-mkdir $HOME
-git config --add safe.directory /srv
+mkdir -p $HOME
+printc "adding safe directory from $PWD"
+git config --global --add safe.directory /srv
