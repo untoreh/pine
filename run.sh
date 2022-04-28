@@ -20,8 +20,8 @@ main() {
 
 	## update image from github
 	printc "building image..."
-	printc "$TRAVIS_COMMIT_MESSAGE"
-	if [ "\${TRAVIS_COMMIT_MESSAGE/scratch-build}" != "\${TRAVIS_COMMIT_MESSAGE}" ]; then
+	printc "$COMMIT_MSG"
+	if [ "\${COMMIT_MSG/scratch-build}" != "\${COMMIT_MSG}" ]; then
 		printc "this is a scratch build..."
 		./init/build.sh
 		printc "ovz..."
