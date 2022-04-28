@@ -8,10 +8,10 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-18.04
+    env:
+      COMMIT_MSG: ${{ github.event.head_commit.message }}
     steps:
       - uses: actions/checkout@v2
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
       #   with:

@@ -2,6 +2,7 @@
 . ./functions.sh
 . ./build_common.sh
 
+os_name=pine
 rootfs=rootfs
 sysroot=/os
 
@@ -20,7 +21,6 @@ boot_part=${LOOPDEV}p1
 make_fs
 
 # set vars, mount the partitions
-os_name=pine
 repo_name=pine
 ref_name=trunk
 

@@ -9,7 +9,7 @@ if [ "\${COMMIT_MSG/scratch-build}" != "\${COMMIT_MSG}" ]; then
     ./init/build_ovz.sh
 else
     printc "this is an updated build..."
-    ./build-update.sh
+    ./build_update.sh
     printc "ovz..."
-    ./build-update_ovz.sh
+    ./build_update_ovz.sh
 fi
