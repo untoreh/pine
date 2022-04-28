@@ -31,3 +31,9 @@ apk add \
 
 . ./functions.sh
 . ./glib.sh
+
+# this script is executed inside the container as root
+# while the mounted repository is owned by the worker user
+mkdir -p $HOME
+printc "adding safe directory from $PWD"
+git config --global --add safe.directory /srv

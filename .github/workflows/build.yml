@@ -1,0 +1,40 @@
+name: Pine Builder
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - '*'
+jobs:
+  docker:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   with:
+      #     ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+      #     limit-access-to-actor: true
+      #     ## limits ssh access and adds the ssh public keys of the listed GitHub users
+      #     limit-access-to-users: untoreh
+      - run: . ./env.sh
+      - run: ./start_container.sh
+      - run: docker exec pinect ./prepare.sh
+      - run: docker exec pinect ./repo.sh
+      - run: docker exec pinect ./make.sh
+      - run: docker exec pinect ./make_ovz.sh
+      - run: docker exec pinect ./make_update.sh
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            image.pine.tgz
+            rootfs.pine_ovz.sq
+            delta.tar
+            delta_base.tar
+            delta_ovz_base.tar
+            pine.sum
+            pine_ovz.sum

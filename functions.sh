@@ -40,8 +40,9 @@ git_versions() {
     if [ "$2" = c ]; then
         remote="$1"
     else
-        remote="git://github.com/$1.git"
+        remote="https://github.com/$1.git"
     fi
+    printc "fetching git version with ls-remote"
     tags=$(git ls-remote -t "$remote")
     tags=$(echo "$tags" | awk '{print $2}')
     tags=$(echo "$tags" | cut -d '/' -f 3)
@@ -55,7 +56,7 @@ pine_version() {
 }
 
 last_version() {
-    git_versions $1 | sort -bt. -k1nr -k2nr -k3r -k4r -k5r | head -1
+    git_versions "$1" | sort -bt. -k1nr -k2nr -k3r -k4r -k5r | head -1
 }
 
 last_version_g(){

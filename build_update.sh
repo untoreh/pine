@@ -1,6 +1,6 @@
 #!/bin/bash
 . ./functions.sh
-. ./build-common.sh
+. ./build_common.sh
 repo=untoreh/pine
 os_name=pine
 config_env
