@@ -40,7 +40,7 @@ git_versions() {
     if [ "$2" = c ]; then
         remote="$1"
     else
-        remote="git://github.com/$1.git"
+        remote="https://github.com/$1.git"
     fi
     printc "fetching git versoin with ls-remote"
     tags=$(git ls-remote -t "$remote")
