@@ -5,7 +5,7 @@ on:
       - develop
   create:
     tags:
-      - v*
+      - *
 jobs:
   docker:
     runs-on: ubuntu-18.04
