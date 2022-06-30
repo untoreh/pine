@@ -5,7 +5,7 @@ modprobe zram
 
 mem=$(grep -i memtotal </proc/meminfo | awk '{print $2}')
 
-mem_ram=$((mem / 10 * 9)) # set size to 9/10 of avail ram
+mem_ram=$((mem / 10 * 9 * 1000)) # set size to 9/10 of avail ram
 algo=zstd
 prio=9         # use high priority
 dev=/dev/zram0 # assume one device
