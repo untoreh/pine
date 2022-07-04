@@ -11,6 +11,8 @@ set -a; . /etc/conf.d/dup 2>/dev/null; set +a
 ## checks
 type dup 1>/dev/null || { echo "error: backup tool not found on system!"; exit 1; }
 cd /opt/dup/repo || { echo "error: backup repository not found!"; exit 1; }
+# clear known_hosts since it causes connections timeouts
+[ -e .duplicacy/known_hosts ] && rm .duplicacy/known_hosts
 
 ## first prune
 dup prune -keep 0:7 -threads "$threads" -storage ${STORAGE_NAME:-default}
