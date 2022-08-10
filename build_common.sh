@@ -254,7 +254,9 @@ csum_arc_image(){
     sha256sum $image_name > ${image_name}.sum
     tar cvzf $archive_path ${image_name} ${image_name}.sum
     local archive_abs=$(realpath $archive_path)
-    printc "archive saved at $archive_abs"
+    local archive_bytes=$(stat -c "%s" $archive_abs 2>/dev/null)
+    local archive_size=$(numfmt --to=iec-i --suffix=B --format="%.3f" $archive_bytes 2>/dev/null)
+    printc "archive saved at $archive_abs, with size $archive_size."
 }
 
 # maybe fix xfs partitions
