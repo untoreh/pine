@@ -618,6 +618,7 @@ apply_upgrade() {
 
 ## $@ packages to install
 install_tools() {
+    set +e
     setup=false
     tools="$@"
     for t in $tools; do
@@ -627,6 +628,7 @@ install_tools() {
         fi
     done
     $setup && apk add --no-cache $toinst
+    set -e
 }
 
 ## $1 path to search
