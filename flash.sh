@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export alpV="v3.10"
+export alpV="v3.15"
 
 case "$1" in
     -a)
@@ -34,29 +34,45 @@ cd pivot
 
 type apk && apk add --no-cache openssl libressl ca-certificates
 type apt && { apt update ; apt install openssl ca-certificates -yq; }
-systemctl stop systemd-timesyncd.service
-systemctl stop systemd-logind.service
-systemctl stop dbus.service
-systemctl stop snapd.service
-systemctl stop polkitd.service
-systemctl stop lvm2-lvmetad.service
-systemctl stop mdadm.service
-systemctl stop atd.service
-systemctl stop acpid.service
-systemctl stop cron.service
-systemctl stop iscsid.service
-systemctl stop systemd-user-sessions.service
-systemctl stop user@0.service
-systemctl stop accounts-daemon.service
-systemctl stop lxcfs.service
-systemctl stop vmware-tools.service
-systemctl stop systemd-journald.service
-systemctl stop systemd-udevd.service
-systemctl stop rsyslog.service
+if type systemctl; then
+    systemctl stop systemd-timesyncd.service
+    systemctl stop systemd-logind.service
+    systemctl stop dbus.service
+    systemctl stop snapd.service
+    systemctl stop polkitd.service
+    systemctl stop lvm2-lvmetad.service
+    systemctl stop mdadm.service
+    systemctl stop atd.service
+    systemctl stop acpid.service
+    systemctl stop cron.service
+    systemctl stop iscsid.service
+    systemctl stop systemd-user-sessions.service
+    systemctl stop user@0.service
+    systemctl stop accounts-daemon.service
+    systemctl stop lxcfs.service
+    systemctl stop vmware-tools.service
+    systemctl stop systemd-journald.service
+    systemctl stop systemd-udevd.service
+    systemctl stop rsyslog.service
+fi
 type yum && yum install ca-certificates wget losetup
 
 ## get busybox for rebooting (not needed when we create a chroot to customize the system)
 /usr/bin/wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+if type sha256sum; then
+    if [ "$(sha256sum  busybox | cut -d ' '  -f 1)" -neq\
+        "79b3c42078019db853f499852dac831afda935acf9df4c748c3bab914f1cf298" ]; then
+        { echo "busybox did not match checksum "; exit 1; }
+    fi
+elif type md5sum; then
+
+    if [ "$(md5sum  busybox | cut -d ' '  -f 1)" -neq \
+        "3aa306a49f0128f1e1dda477b5ea915d" ]; then
+        { echo "busybox did not match checksum "; exit 1; }
+    fi
+else
+    echo "WARNING: Couldn't verify busybox checksum. (sha256sum or md5sum not found)"
+fi
 chmod +x busybox
 [ ! -e busybox -o ! -x busybox ] && exit 1
 mkdir bbin
@@ -72,20 +88,22 @@ echo "NODE=$NODE" > ./network-environment
 [ -n "$IPv6" ] && echo "IPv6=$IPv6" >> ./network-environment
 
 ## give chroot capabilities
-sysctl -w  \
- kernel.grsecurity.chroot_deny_fchdir=0  \
- kernel.grsecurity.chroot_deny_shmat=0  \
- kernel.grsecurity.chroot_deny_sysctl=0  \
- kernel.grsecurity.chroot_deny_unix=0  \
- kernel.grsecurity.chroot_enforce_chdir=0  \
- kernel.grsecurity.chroot_findtask=0  \
- kernel.grsecurity.chroot_caps=0  \
- kernel.grsecurity.chroot_deny_chmod=0  \
- kernel.grsecurity.chroot_deny_chroot=0  \
- kernel.grsecurity.chroot_deny_mknod=0  \
- kernel.grsecurity.chroot_deny_mount=0  \
- kernel.grsecurity.chroot_deny_pivot=0  \
- kernel.grsecurity.chroot_restrict_nice=0 &>/dev/null
+if type sysctl; then
+    sysctl -w  \
+    kernel.grsecurity.chroot_deny_fchdir=0  \
+    kernel.grsecurity.chroot_deny_shmat=0  \
+    kernel.grsecurity.chroot_deny_sysctl=0  \
+    kernel.grsecurity.chroot_deny_unix=0  \
+    kernel.grsecurity.chroot_enforce_chdir=0  \
+    kernel.grsecurity.chroot_findtask=0  \
+    kernel.grsecurity.chroot_caps=0  \
+    kernel.grsecurity.chroot_deny_chmod=0  \
+    kernel.grsecurity.chroot_deny_chroot=0  \
+    kernel.grsecurity.chroot_deny_mknod=0  \
+    kernel.grsecurity.chroot_deny_mount=0  \
+    kernel.grsecurity.chroot_deny_pivot=0  \
+    kernel.grsecurity.chroot_restrict_nice=0 &>/dev/null
+fi
 
 ## copy network interfaces
 if [ "$(cat /etc/network/interfaces | grep -v lo | grep inet | wc -l)" -gt 0 ]; then
