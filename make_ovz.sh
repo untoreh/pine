@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 . ./functions.sh
 name=pine_ovz
 ref=trunk
@@ -336,13 +338,15 @@ chpwd() {
 }
 
 hostname=pine
-chpwd echo "root:rootppp" | chpwd chpasswd
-chpwd adduser pine -D
-chpwd echo "pine:pineppp" | chpwd chpasswd
-echo '' >etc/motd
-chpwd setup-hostname $hostname
-chpwd setup-timezone -z CET
-chpwd setup-sshd -c dropbear
+{
+    chpwd echo "root:rootppp" | chpwd chpasswd
+    chpwd adduser pine -D
+    chpwd echo "pine:pineppp" | chpwd chpasswd
+    echo '' >etc/motd
+    chpwd setup-hostname $hostname
+    chpwd setup-timezone -z CET
+    chpwd setup-sshd -c dropbear
+} || true
 
 ## SERVICES
 for r in `cat ../runlevels_ovz.sh`; do

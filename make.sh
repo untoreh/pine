@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 . ./functions.sh
 name=pine
 ref=trunk
@@ -123,14 +125,16 @@ chpwd() {
 }
 
 hostname=pine
-chpwd echo "root:rootppp" | chpwd chpasswd
-chpwd adduser pine -D
-chpwd echo "pine:pineppp" | chpwd chpasswd
-echo '' >etc/motd
-chpwd setup-hostname $hostname
-chpwd setup-timezone -z CET
-chpwd setup-sshd -c dropbear
-chpwd setup-ntp -c busybox
+{
+    chpwd echo "root:rootppp" | chpwd chpasswd
+    chpwd adduser pine -D
+    chpwd echo "pine:pineppp" | chpwd chpasswd
+    echo '' >etc/motd
+    chpwd setup-hostname $hostname
+    chpwd setup-timezone -z CET
+    chpwd setup-sshd -c dropbear
+    chpwd setup-ntp -c busybox
+} || true
 
 ## services
 for r in $(cat ../runlevels.sh); do
