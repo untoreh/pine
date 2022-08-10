@@ -204,6 +204,7 @@ cd -
 
 # commit the rootfs to ostree
 cd /srv
+echo "Committing ${name}_tree to ostree ref ${ref}..."
 ostree --repo=pine commit -s "$(date)-build" -b ${ref} --tree=dir="${name}_tree"
 ostree summary -u --repo=pine
 ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' >pine.sum
