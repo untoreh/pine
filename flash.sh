@@ -58,17 +58,17 @@ fi
 type yum && yum install ca-certificates wget losetup
 
 ## get busybox for rebooting (not needed when we create a chroot to customize the system)
-/usr/bin/wget https://www.busybox.net/downloads/binaries/1.26.2-defconfig-multiarch/busybox-x86_64 -O busybox
+/usr/bin/wget https://github.com/untoreh/pine/raw/master/utils/busybox -O busybox
 if type sha256sum; then
     if [ "$(sha256sum  busybox | cut -d ' '  -f 1)" -neq \
-        "79b3c42078019db853f499852dac831afda935acf9df4c748c3bab914f1cf298" ]; then
+        "adc719974134562effee93f714a10acb7738803879c6c0ba8cb41d4b6453971e" ]; then
         echo "busybox did not match checksum "
         exit 1
     fi
 elif type md5sum; then
 
     if [ "$(md5sum  busybox | cut -d ' '  -f 1)" -neq \
-        "3aa306a49f0128f1e1dda477b5ea915d" ]; then
+        "194f00b06f94fd3ece9a3a22268af2d3" ]; then
         { echo "busybox did not match checksum "; exit 1; }
     fi
 else
