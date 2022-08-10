@@ -1,5 +1,9 @@
 #!/bin/bash
 . ./functions.sh
+
+[ ! -e make_ovz_success ] && { err "make_ovz script failed aborting"; exit 1; }
+set -e
+
 name=pine_ovz
 artifact_repo="untoreh/pine"
 delta="delta_ovz"
@@ -8,10 +12,12 @@ artifact="${rootfs}.${name}.sq"
 ref="trunk"
 
 ## confirm we made a new tree
+set +e
 if [ ! "$(find ${name}_tree/* -maxdepth 0 | wc -l)" -gt 0 ]; then
 	echo "newer tree not grown. (tree folder is empty)"
 	exit 1
 fi
+set -e
 
 ## deps
 install_tools ostree util-linux wget
@@ -69,3 +75,7 @@ tar cf ${delta}_base.tar $rev
 ## squash image (defaults gzip 128k bs)
 rm -f $artifact
 mksquashfs $rootfs $artifact -noappend
+archive_abs=$(realpath $artifact)
+archive_bytes=$(stat -c "%s" $archive_abs 2>/dev/null)
+archive_size=$(numfmt --to=iec-i --suffix=B --format="%.3f" $archive_bytes 2>/dev/null)
+princ "squashed ovz file $archive_abs of size $archive_size"

@@ -1,6 +1,10 @@
 #!/bin/bash
 . ./functions.sh
 . ./build_common.sh
+
+[ ! -e make_success ] && { err "make script failed aborting"; exit 1; }
+set -e
+
 repo=untoreh/pine
 os_name=pine
 config_env

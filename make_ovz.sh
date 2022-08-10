@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm -f make_ovz_success
 set -e
 
 . ./functions.sh
@@ -407,3 +408,4 @@ ostree --repo=${name} commit -s $(date)'-build' -b ${ref} --tree=dir=${name}_tre
 ostree summary -u --repo=${name}
 ostree --repo=${name} ls ${ref} -Cd | awk '{print $5}' > ${name}.sum
 #pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d
+touch make_ovz_success

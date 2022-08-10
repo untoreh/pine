@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm -f make_success
 set -e
 
 . ./functions.sh
@@ -213,3 +214,4 @@ ostree --repo=pine commit -s "$(date)-build" -b ${ref} --tree=dir="${name}_tree"
 ostree summary -u --repo=pine
 ostree --repo=pine ls ${ref} -Cd | awk '{print $5}' >pine.sum
 ## pgrep -f trivial-httpd &>/dev/null || ostree trivial-httpd -P 39767 /srv/pine -d
+touch make_success
