@@ -1,5 +1,11 @@
 name: Pine Builder
 on:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
   push:
     branches:
       - develop
@@ -7,18 +13,19 @@ on:
       - '*'
 jobs:
   docker:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     env:
       COMMIT_MSG: ${{ github.event.head_commit.message }}
     steps:
       - uses: actions/checkout@v2
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   with:
-      #     ## limits ssh access and adds the ssh public key for the user which triggered the workflow
-      #     limit-access-to-actor: true
-      #     ## limits ssh access and adds the ssh public keys of the listed GitHub users
-      #     limit-access-to-users: untoreh
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        with:
+          ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+          limit-access-to-actor: true
+          ## limits ssh access and adds the ssh public keys of the listed GitHub users
+          limit-access-to-users: untoreh
       - run: . ./env.sh
       - run: ./start_container.sh
       - run: docker exec pinect ./prepare.sh
