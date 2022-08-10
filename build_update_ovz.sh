@@ -1,5 +1,9 @@
 #!/bin/bash
 . ./functions.sh
+
+[ ! -e make_ovz_success ] && { err "make_ovz script failed aborting"; exit 1; }
+set -e
+
 name=pine_ovz
 artifact_repo="untoreh/pine"
 delta="delta_ovz"

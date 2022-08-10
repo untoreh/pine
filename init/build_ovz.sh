@@ -1,6 +1,9 @@
 #!/bin/bash
 . ./functions.sh
 
+[ ! -e make_ovz_success ] && { err "make_ovz script failed aborting"; exit 1; }
+set -e
+
 cd /srv
 rootfs=rootfs
 sysroot=rootfs

@@ -1,5 +1,6 @@
 # ensures some things are setup
 config_env(){
+    set +e
     check_vars os_name
     ## confirm we made a new tree
     if [ ! "$(find ${os_name}_tree/* -maxdepth 0 | wc -l)" -gt 0 ]; then
@@ -15,6 +16,7 @@ config_env(){
     repodir="/srv"
     image_dir="imgtmp"
     mkdir -p $image_dir
+    set -e
 }
 
 clear_sysroot(){
@@ -124,6 +126,7 @@ install_grub(){
 # $1 device
 # $2 sysroot
 unmount_sysroot() {
+    set +e
     sync
     local LOOPDEV=$1
     local sysroot=$2
@@ -138,6 +141,7 @@ unmount_sysroot() {
 	      cat /proc/mounts | grep ${loop_name} | sort -r | cut -d ' ' -f 2 | xargs -I {} umount {} &>/dev/null
 	      sleep 1
     done
+    set -e
 }
 
 ostree_rm_deploys(){

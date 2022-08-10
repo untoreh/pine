@@ -1,4 +1,8 @@
 #!/bin/bash
+
+[ ! -e make_success ] && { err "make script failed aborting"; exit 1; }
+set -e
+
 . ./functions.sh
 . ./build_common.sh
 
