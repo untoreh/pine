@@ -105,7 +105,7 @@ apkc() {
 }
 
 apkc add --initdb --update-cache alpine-base sudo tzdata \
-	mkinitfs xfsprogs grub-bios \
+	mkinitfs xfsprogs e2fsprogs grub-bios \
 	util-linux binutils coreutils blkid multipath-tools \
 	ca-certificates wget ethtool iptables \
 	ostree git \
