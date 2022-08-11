@@ -26,15 +26,25 @@ if [ -z "$NODE" ] ; then
     exit 1
 fi
 
-modprobe loop xfs || { echo "kernel modules unavailable (ensure xfs version is recent enough)"; exit 1; }
+modprobe loop
+modprobe xfs
+if ! lsmod | grep -qE '^xfs'; then
+  echo "xfs kernel module unavailable (ensure xfs version is recent enough)"
+  exit 1
+fi
 
 ## mount tmpfs
 mkdir -p pivot && mount -t tmpfs -o exec,size=768M tmpfs pivot
 cd pivot
 
-type apk && apk add --no-cache openssl libressl ca-certificates
-type apt && { apt update ; apt install openssl ca-certificates -yq; }
-if type systemctl; then
+check_bin() {
+    type $1 &>/dev/null
+}
+
+check_bin wget || { echo "wget binary not found. Install it manually."; exit 1; }
+check_bin apk && apk add --no-cache openssl libressl ca-certificates
+check_bin apt &>/dev/null && { apt update ; apt install openssl ca-certificates -yq; }
+if check_bin systemctl; then
     systemctl stop systemd-timesyncd.service
     systemctl stop systemd-logind.service
     systemctl stop dbus.service
@@ -55,20 +65,19 @@ if type systemctl; then
     systemctl stop systemd-udevd.service
     systemctl stop rsyslog.service
 fi
-type yum && yum install ca-certificates wget losetup
+check_bin yum && yum install ca-certificates wget losetup
 
 ## get busybox for rebooting (not needed when we create a chroot to customize the system)
 /usr/bin/wget https://github.com/untoreh/pine/raw/master/utils/busybox -O busybox
-if type sha256sum; then
-    if [ "$(sha256sum  busybox | cut -d ' '  -f 1)" -neq \
-        "adc719974134562effee93f714a10acb7738803879c6c0ba8cb41d4b6453971e" ]; then
+if check_bin sha256sum; then
+    bbsha256=adc719974134562effee93f714a10acb7738803879c6c0ba8cb41d4b6453971e
+    if [ "$(sha256sum  busybox | cut -d ' '  -f 1)" != $bbsha256 ]; then
         echo "busybox did not match checksum "
         exit 1
     fi
-elif type md5sum; then
-
-    if [ "$(md5sum  busybox | cut -d ' '  -f 1)" -neq \
-        "194f00b06f94fd3ece9a3a22268af2d3" ]; then
+elif check_bin md5sum; then
+    bbmd5=194f00b06f94fd3ece9a3a22268af2d3
+    if [ "$(md5sum  busybox | cut -d ' '  -f 1)" != $bbmd5 ]; then
         { echo "busybox did not match checksum "; exit 1; }
     fi
 else
@@ -89,7 +98,7 @@ echo "NODE=$NODE" > ./network-environment
 [ -n "$IPv6" ] && echo "IPv6=$IPv6" >> ./network-environment
 
 ## give chroot capabilities
-if type sysctl; then
+if check_bin sysctl; then
     sysctl -w  \
     kernel.grsecurity.chroot_deny_fchdir=0  \
     kernel.grsecurity.chroot_deny_shmat=0  \
@@ -132,13 +141,18 @@ cat << 'CEOF' >customize.sh
 #!/bin/sh
 ## pass device name
 DEVICE=$1
+IMAGE_TAG=$2
 . ./network-environment
 
 ## get image url
-img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
-## get the last if the latest is not available somehow
+if [ -n "$IMAGE_TAG" ]; then
+    img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases/tags/$IMAGE_TAG | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+else
+    img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases/latest | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+    ## get the last if the latest is not available somehow
+fi
 if [ -z "$img_url" ]; then
-   img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
+img_url=`/usr/bin/wget -qO- https://api.github.com/repos/untoreh/pine/releases | /bin/grep browser_download_url | grep image.pine | head -n 1 | cut -d '"' -f 4`
 fi
 echo $img_url
 
@@ -272,4 +286,4 @@ reboot -f
 CEOF
 chmod +x customize.sh
 
-chroot . /bin/sh -x customize.sh $DEVICE
+chroot . /bin/sh -x customize.sh $DEVICE $IMAGE_TAG

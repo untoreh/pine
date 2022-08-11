@@ -48,8 +48,9 @@ make_fs(){
         exit 1
     }
     sfdisk $LOOPDEV < layout.cfg
-    mkfs.ext2 -L /boot $boot_part
-    mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 $root_part
+    # use a small inode size to save space
+    mkfs.ext2 -L /boot -I 128 $boot_part
+    mkfs.xfs -f -L /sysroot -d agsize=16m -i size=512 $root_part
     mkswap -L swap $swap_part
 }
 
