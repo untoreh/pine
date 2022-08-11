@@ -48,7 +48,7 @@ make_fs(){
         exit 1
     }
     sfdisk $LOOPDEV < layout.cfg
-    mkfs.ext2 -L /boot -I 1024 $boot_part
+    mkfs.ext2 -L /boot $boot_part
     mkfs.xfs -f -L /sysroot -d agsize=16m -i size=1024 $root_part
     mkswap -L swap $swap_part
 }
@@ -111,7 +111,7 @@ install_grub(){
         grub_modules=$sysroot/usr/lib/grub/i386-pc/
         grub-install -d $grub_modules ${LOOPDEV} --root-directory=$sysroot
     else
-        grub-install $boot_part --root-directory=$sysroot
+        grub-install ${LOOPDEV} --root-directory=$sysroot
     fi
     # a fix for missing links
     ln -sr $sysroot/boot/{grub,grub2}
