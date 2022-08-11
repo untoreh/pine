@@ -7,15 +7,14 @@ PARAMS="/sys/module/zswap/parameters"
 if [ "$SWAP_FILE" = "-q" ]; then
     # quit
     echo "Disabling zswap..."
-    echo 0 | $PARAMS/enabled
-    rmmod zswap
+    echo 0 > $PARAMS/enabled
     exit 0
 fi
 
 [ "$(id -u)" = 0 ] || { echo needs root permissions; exit 1; }
 [ -z "$SWAP_FILE" ] && { echo provide a swap file or device; exit 1; }
 shift
-CREATE="${2}"
+CREATE="${1}"
 if [ ! -e $SWAP_FILE ]; then
     if [ -n "$CREATE" ]; then
         if [ $CREATE = "-a" ]; then
@@ -28,14 +27,15 @@ if [ ! -e $SWAP_FILE ]; then
     fi
 fi
 
-rmmod zram
+if lsmod | grep -qE '^zram'; then
+    rmmod zram
+fi
 swapoff -a
 modprobe zswap
-echo z3fold | $PARAMS/zpool
-echo zstd | $PARAMS/compressor
-echo 95 | $PARAMS/max_pool_percent
-echo 97 | $PARAMS/accept_threshold_percent
-echo 3 | /proc/sys/vm/drop_caches
+echo z3fold > $PARAMS/zpool &>/dev/null || true # alpine doesn't build z3fold
+echo zstd > $PARAMS/compressor
+echo 95 > $PARAMS/max_pool_percent
+echo 97 > $PARAMS/accept_threshold_percent
+echo 3 > /proc/sys/vm/drop_caches
 swapon $SWAP_DEVICE
-echo 1 | $PARAMS/enabled
-
+echo Y > $PARAMS/enabled

@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+
+# ostree needs this to consider a session as booted
+description="Enable zswap"
+command=/etc/zswap
+
+depend() {
+	need bootmisc modules
+}
+
+start() {
+	ebegin "Enabling zswap on file $SWAPFILE of size $SWAPSIZE."
+	$command $SWAPFILE $SWAPSIZE
+	eend $?
+}
+
+stop() {
+	ebegin "turning off zram"
+	$command -q
+	eend $?
+}
