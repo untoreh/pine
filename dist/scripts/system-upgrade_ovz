@@ -1,6 +1,6 @@
 #!/bin/bash
 . /etc/profile.d/func.sh
-
+set -e
 ## recreate commit, is this part atomic?
 ## ostree refs --delete trunk
 ## ostree refs --create trunk $cmt
@@ -27,10 +27,11 @@ delta="delta_ovz"
 os="pine_ovz"
 
 ## get the current version
-read curV < /etc/pine
+read -N 8 curV < /etc/pine
 ## get the latest version on github
 lasV=$(last_release ${repo})
 check_vars lasV curV
+printc "Current: $curV => latest $lasV"
 
 ## compare
 if [ ! $curV = $lasV -o "$1" = force ]; then
@@ -38,18 +39,22 @@ if [ ! $curV = $lasV -o "$1" = force ]; then
     del_deployments
     ## if tmp folder exists an update didn't end properly
     if [ -d $work ]; then
-        cd $work
-        get_commit
+        cd $work || { mkdir -p $work; cd $work; } || \
+            { printc "couldn't change to directory ${work}"; exit 1; }
+        get_commit -q
         ## we have a delta file, try upgrade
         if [ -n "$cmt" ]; then
+            printc "commit found, applying upgrade"
             apply_upgrade
             ## if upgrade didn't happen delta file might be corrupted
-            if [ ! $upg ]; then
+            if ! $upg; then
+                printc "upgrade failed, fetching delta again."
                 get_delta
                 apply_upgrade
             fi
         else
             ## get the delta file, upgrade
+            printc "no commit found, fetching delta"
             get_delta
             apply_upgrade
         fi
@@ -59,6 +64,13 @@ if [ ! $curV = $lasV -o "$1" = force ]; then
         ## get the delta file, upgrade
         get_delta
         apply_upgrade
+        if ! $upg; then
+            # clear orphaned deltas
+            rm -f $work/*
+            get_delta last
+            apply_upgrade
+        fi
+        $upg || err "Upgrade from $curV to ${nexV}..${lasV} failed"
     fi
 fi
 

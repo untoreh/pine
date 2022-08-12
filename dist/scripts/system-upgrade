@@ -46,7 +46,7 @@ if [ $curV != $lasV -o "$1" = force ]; then
             printc "commit found, applying upgrade"
             apply_upgrade
             ## if upgrade didn't happen delta file might be corrupted
-            if [ ! $upg ]; then
+            if ! $upg; then
                 printc "upgrade failed, fetching delta again."
                 get_delta
                 apply_upgrade
