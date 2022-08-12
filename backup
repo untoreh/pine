@@ -16,6 +16,7 @@ cd /opt/dup/repo || { echo "error: backup repository not found!"; exit 1; }
 
 ## first prune
 dup prune -keep 0:7 -threads "$threads" -storage ${STORAGE_NAME:-default}
+dup check -fossils -resurrect -persist -threads "$threads" -storage ${STORAGE_NAME:-default}
 
 ## then backup
 dup backup -stats -threads "$threads" -storage ${STORAGE_NAME:-default}
