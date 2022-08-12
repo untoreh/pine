@@ -1,6 +1,7 @@
 #!/bin/bash
 . /etc/profile.d/func.sh
-
+trap 'System upgrade failed! $LINENO' ERR
+set -e
 ## recreate commit, is this part atomic?
 ## ostree refs --delete trunk
 ## ostree refs --create trunk $cmt
@@ -24,11 +25,12 @@ work=/var/tmp/pine-upgrade
 delta=delta
 bdelta=delta_base
 
-## get the current version
-read curV < /etc/pine
+## get the current version (the version must be 8 chars long, e.g. 00.00-00)
+read -N 8 curV < /etc/pine
 ## get the latest version on github
 lasV=$(last_release ${repo})
 check_vars lasV curV
+printc "Current: $curV => latest $lasV"
 
 ## compare
 if [ $curV != $lasV -o "$1" = force ]; then
@@ -37,21 +39,21 @@ if [ $curV != $lasV -o "$1" = force ]; then
     ## if tmp folder exists an update didn't end properly
     if [ -d $work ]; then
         cd $work || { mkdir -p $work; cd $work; } || \
-            { echo "couldn't change to directory ${work}"; exit 1; }
-        get_commit
+            { printc "couldn't change to directory ${work}"; exit 1; }
+        get_commit -q
         ## we have a delta file, try upgrade
         if [ -n "$cmt" ]; then
-            echo "commit found, applying upgrade"
+            printc "commit found, applying upgrade"
             apply_upgrade
             ## if upgrade didn't happen delta file might be corrupted
             if [ ! $upg ]; then
-                echo "upgrade failed, fetching delta again."
+                printc "upgrade failed, fetching delta again."
                 get_delta
                 apply_upgrade
             fi
         else
             ## get the delta file, upgrade
-            echo "no commit found, fetching delta"
+            printc "no commit found, fetching delta"
             get_delta
             apply_upgrade
         fi

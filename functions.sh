@@ -65,6 +65,7 @@ last_version_g(){
 
 ## $1 repo $2 type
 last_release() {
+    set +e
     local repo="${1}"
     if [ -n "$2" ]; then
         local latest=
@@ -78,6 +79,7 @@ last_release() {
     fi
     wget -qO- https://api.github.com/repos/${repo}/releases$latest \
         | awk '/tag_name/ { print $2 }' | grep "$release_type" | head -${offset:-1} | tail -1 | sed -r 's/",?//g'
+    set -e
 }
 
 ## $1 repo $2 tag name
@@ -108,14 +110,20 @@ next_release() {
     near_tags=$(git ls-remote -t https://github.com/${1} --match "$cur_D*" | awk '{print $2}' \
         | cut -d '/' -f 3 | cut -d '^' -f 1 | sed 's/^v//' | sort -bt- -k2n)
     ## loop until we find a valid release
-    while
-        cur_tag=$(echo "$near_tags" | awk '/'"$cur_tag"'/{getline; print; exit }')
-        echo "looking for releases tagged $cur_tag" 1>&2
-        next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag})
-        [ -z "$next_release" -a -n "$cur_tag" ]
-    do :
+    this_tag=false
+    next_release=""
+    for remote_tag in $near_tags; do
+        echo "looking for releases tagged $remote_tag" 1>&2
+        if [ $remote_tag = $cur_tag ]; then
+            this_tag=true
+            continue
+        fi
+        if [ $this_tag = true ]; then
+            next_release=$(wget -qO- https://api.github.com/repos/${1}/releases/tags/${cur_tag})
+        fi
+        [ -n "$next_release" ] && break
     done
-    echo $cur_tag
+    echo $remote_tag
 }
 
 ## get a valid next tag for the current git repo format: YY.MM-X
@@ -544,15 +552,17 @@ wrap_up() {
 
 del_deployments() {
     # make sure the ostree flag is set
-    touch /run/ostree-booted
+    [ -e /run/ostree-booted ]
     # dangling tmp files can make commands fail if no space is available
     rm -rf /ostree/repo/tmp/staging-*
-    ostree admin undeploy 1 || ostree admin undeploy 0
+    set +e; ostree admin undeploy 1 || ostree admin undeploy 0; set -e
     ostree prune --keep-younger-than=1s
     ostree admin cleanup
 }
 
 get_delta() {
+    check_vars repo curV delta
+    set +e
     if [ -z "$1" ]; then
         nexV=$(next_release $repo $curV)
         [ -z "$nexV" -o "$nexV" = "$curV" ] && nexV=$lasV
@@ -581,16 +591,17 @@ get_delta() {
     else
         printc "*next* ($nexV) delta download was succesful"
     fi
+    set -e
     get_commit
 }
 
 get_commit() {
     ## the delta file name is also the commit number
     echo "looking for commit data in $PWD ..."
-    cmt_path=$(find | grep -E [a-z0-9]{64})
+    set +e; cmt_path=$(find | grep -E [a-z0-9]{64}); set -e
     if [ -n "$cmt_path" ]; then
         export cmt=$(basename $cmt_path)
-    else
+    elif [ "$1" != "-q" ]; then
         echo "error: no file carried the name of a commit."
         return 1
     fi
