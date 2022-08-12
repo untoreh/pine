@@ -350,11 +350,13 @@ umount_hw() {
 apkc() {
     initdb=""
     root_path=$(realpath ${1})
-    apkrepos=${root_path}/etc/apk
     shift
+    apkrepos="${root_path}/etc/apk"
+    apkreposfile="${apkrepos}/repositories"
     mkdir -p ${apkrepos}
-    if [ ! -f "${apkrepos}/repositories" ]; then
+    if [ ! -f $apkreposfile ]; then
         cp /etc/apk/repositories ${apkrepos}
+        cat /etc/apk/edge-repositories >> ${apkreposfile}
         initdb="--initdb --no-cache"
     fi
     /usr/sbin/apk --arch x86_64 --allow-untrusted --root ${root_path} $initdb $@

@@ -83,6 +83,7 @@ cp -a ${dist_dir}/cfg/fstab etc/fstab
 ## repositories
 mkdir -p etc/apk
 cat /etc/apk/repositories >etc/apk/repositories
+cp -a ${dist_dir}/cfg/edge-repositories etc/apk/edge-repositories
 
 ## nameservers
 cp -a ${dist_dir}/cfg/resolv.conf etc/resolv.conf
