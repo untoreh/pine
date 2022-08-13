@@ -536,17 +536,26 @@ package_tree(){
     tar cvf ${pkg}_ovz.tar ${rev}
 }
 
+ostree_pending() {
+    ostree admin status | grep -q pending
+}
+
 ## system upgrade
 wrap_up() {
+    ##
     ## cleanup tmp folder
     rm -rf $work
     ## prune ostree
     ostree prune --refs-only --keep-younger-than="1 months ago"
     ## finish
-    if $upg; then
+    if $upg || ostree_pending; then
         date=$(date +%Y-%m-%d)
         echo -e "$curV updated to:\n$lasV -- $cmt\n@ ${date}\nrebooting..."
-        reboot lock queue -d 10
+        if [ "$1" = "-f" ]; then
+            reboot -f
+        else
+            reboot lock queue -d 10
+        fi
     else
         echo -e "$curV checked for updates.\n@ ${date}"
     fi

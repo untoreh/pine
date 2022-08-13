@@ -1,6 +1,6 @@
 #!/bin/bash
 . /etc/profile.d/func.sh
-trap 'System upgrade failed! $LINENO' ERR
+trap 'echo "System upgrade failed! $LINENO"' ERR
 set -e
 ## recreate commit, is this part atomic?
 ## ostree refs --delete trunk
@@ -25,8 +25,8 @@ work=/var/tmp/pine-upgrade
 delta=delta
 bdelta=delta_base
 
-## get the current version (the version must be 8 chars long, e.g. 00.00-00)
-read -N 8 curV < /etc/pine
+## get the current version (the version must be 8 chars long, e.g. 00.00-00 or 00.00-0)
+read -N 8 curV </etc/pine || read -N 7 curV </etc/pine
 ## get the latest version on github
 lasV=$(last_release ${repo})
 check_vars lasV curV

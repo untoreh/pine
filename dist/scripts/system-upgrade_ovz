@@ -1,5 +1,6 @@
 #!/bin/bash
 . /etc/profile.d/func.sh
+trap 'echo "System upgrade failed! $LINENO"' ERR
 set -e
 ## recreate commit, is this part atomic?
 ## ostree refs --delete trunk
@@ -13,10 +14,16 @@ set -e
 ## the ref in case it was interrupted,
 
 ## sanity check
-which ostree &>/dev/null \
-    || { echo "Not an ostree installation, terminating." ; exit 1; }
-ls /ostree/deploy | grep ovz \
-    || { echo "Not an ovz deployment, terminating." ; exit 1; }
+which ostree &>/dev/null ||
+    {
+        echo "Not an ostree installation, terminating."
+        exit 1
+    }
+ls /ostree/deploy | grep ovz ||
+    {
+        echo "Not an ovz deployment, terminating."
+        exit 1
+    }
 # rc-update show default | grep clearlock || exit 1
 
 ## vars
@@ -27,52 +34,112 @@ delta="delta_ovz"
 os="pine_ovz"
 
 ## get the current version
-read -N 8 curV < /etc/pine
+read -N 8 curV </etc/pine || read -N 7 curV </etc/pine
 ## get the latest version on github
 lasV=$(last_release ${repo})
 check_vars lasV curV
 printc "Current: $curV => latest $lasV"
 
+ovz_fix_boot() {
+    ## Must be run after ostree upgrade
+    check_vars os
+    boot_path=$(cat $(ls /boot/loader/entries/ostree-*.conf | head -1) |
+                    grep -m1 "$os/" | sed -r "s/.*$os\///")
+    boot_dir=$(cat $(ls /boot/loader/entries/ostree-*.conf | head -1) |
+                   grep -oE 'boot\.[0-9]' | head -1)
+    [ ! -e /ostree/$boot_dir ] &&
+        { err "Could not find boot directory at /ostree/$boot_dir"; return; }
+    rm -f /ostree/$boot_dir/$os/$boot_path
+    dpl=$(ls -t /ostree/deploy/$os/deploy | grep "\.[0-9]$" | head -1)
+    dpl_path="/ostree/deploy/$os/deploy/$dpl"
+    ln -sr $dpl_path /ostree/$boot_dir/$os/$boot_path
+    # schedule a one time (self deleting) cleanup operation after upgrade
+    if [ "$1" = "-cleanup" ]; then
+        printc "Scheduling ostree cleanup"
+        cleanup_path="$dpl_path/etc/local.d/99-ostree-cleanup.sh"
+        echo -e "#!/bin/sh\nostree admin cleanup\nrm -f $cleanup_path\n" > $cleanup_path
+        chmod +x $cleanup_path
+    fi
+}
+
+# stubs boot files to comply with `ostree admin` commands
+# since ostree in ovz doesn't manage the kernel
+ovz_upgrade() {
+    local upg_match="Transaction complete|No update|Failed to find kernel"
+    set +e
+    if ostree admin upgrade --os=${os} --override-commit=$cmt 2>&1 |
+            grep -qE "$upg_match"; then
+        printc "Upgrade succesful"
+        upg=true
+    else
+        upg=false
+    fi
+    ## if no upgrade was done
+    if ! $upg; then
+        ostree static-delta apply-offline $cmt
+        if ostree admin upgrade --os=${os} --override-commit=$cmt 2>&1 |
+                grep -qE "$upg_match"; then
+            printc "Upgrade succesful (static-delta)"
+            upg=true
+        else
+            upg=false
+        fi
+    fi
+    if $upg; then
+        ovz_fix_boot -cleanup
+    fi
+    set -e
+}
+
+
 ## compare
 if [ ! $curV = $lasV -o "$1" = force ]; then
+    # ensure boot configuration is compliant
+    ostree admin status &>/dev/null || ovz_fix_boot
     # make room for new update
     del_deployments
     ## if tmp folder exists an update didn't end properly
     if [ -d $work ]; then
-        cd $work || { mkdir -p $work; cd $work; } || \
-            { printc "couldn't change to directory ${work}"; exit 1; }
+        cd $work || {
+            mkdir -p $work
+            cd $work
+        } ||
+            {
+                printc "couldn't change to directory ${work}"
+                exit 1
+            }
         get_commit -q
         ## we have a delta file, try upgrade
         if [ -n "$cmt" ]; then
             printc "commit found, applying upgrade"
-            apply_upgrade
+            ovz_upgrade
             ## if upgrade didn't happen delta file might be corrupted
             if ! $upg; then
                 printc "upgrade failed, fetching delta again."
                 get_delta
-                apply_upgrade
+                ovz_upgrade
             fi
         else
             ## get the delta file, upgrade
             printc "no commit found, fetching delta"
             get_delta
-            apply_upgrade
+            ovz_upgrade
         fi
     else
         mkdir -p $work
         cd $work
         ## get the delta file, upgrade
         get_delta
-        apply_upgrade
+        ovz_upgrade
         if ! $upg; then
             # clear orphaned deltas
             rm -f $work/*
             get_delta last
-            apply_upgrade
+            ovz_upgrade
         fi
         $upg || err "Upgrade from $curV to ${nexV}..${lasV} failed"
     fi
 fi
 
 ## clean tmp folder, potentially reboot
-wrap_up
+wrap_up -f
