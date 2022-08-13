@@ -20,7 +20,7 @@ if [ ! -e $SWAP_FILE ]; then
         if [ $CREATE = "-a" ]; then
             CREATE=$(free -h | grep Mem: | awk '{print $2}')
         fi
-        fallocate -l $CREATE $SWAP_FILE
+        fallocate -l $CREATE $SWAP_FILE || rm -f $SWAP_FILE
         shift
     else
         echo "swap file $SWAP_FILE does not exist"
