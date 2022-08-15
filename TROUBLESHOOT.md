@@ -11,3 +11,13 @@ cp -a /var/boot/* /boot
 ```
 
 Which will use inodes of 128 bytes.
+
+# Upgrade failed, a re-deployment is required
+Make sure to pass the specific partition ID and options to the deploy command:
+
+``` shell
+ostree admin deploy --os=pine trunk \
+            --karg=root=UUID=$(blkid -s UUID -o value /dev/vda3) \
+            --karg=rootfstype=xfs \
+            --karg=rootflags=rw,noatime,nodiratime,largeio,inode64
+```
