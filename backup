@@ -1,5 +1,6 @@
 #!/bin/sh -l
 
+
 ## configure threads
 threads=$(nproc || cat /proc/cpuinfo | grep -c 'core id')
 [ -z "$threads" ] && threads=2
@@ -9,15 +10,67 @@ threads=$(nproc || cat /proc/cpuinfo | grep -c 'core id')
 set -a; . /etc/conf.d/dup 2>/dev/null; set +a
 
 ## checks
+set -e # stop errors after sourcing dup config which can have unset vars
 type dup 1>/dev/null || { echo "error: backup tool not found on system!"; exit 1; }
 cd /opt/dup/repo || { echo "error: backup repository not found!"; exit 1; }
 # clear known_hosts since it causes connections timeouts
 [ -e .duplicacy/known_hosts ] && rm .duplicacy/known_hosts
 
+max_runtime=${DUP_MAX_RUNTIME:-3600} # in seconds
+storage=${STORAGE_NAME:-default}
+dup_prune_args="-keep 0:7 -threads $threads -storage $storage"
+
+with_timeout() {
+    timeout --foreground $max_runtime $@
+}
+
+consul_check() {
+    which consul &> /dev/null || { echo "consul not found."; false; }
+}
+
 ## first prune
-dup prune -keep 0:7 -threads "$threads" -storage ${STORAGE_NAME:-default}
-dup check -fossils -resurrect -persist -threads "$threads" -storage ${STORAGE_NAME:-default}
+with_timeout dup prune $dup_prune_args
+with_timeout dup check -fossils -resurrect -persist -threads $threads -storage $storage
 
-## then backup
-dup backup -stats -threads "$threads" -storage ${STORAGE_NAME:-default}
+# Do exclusive pruning to permanently delete chunks from remote
+# It should only be enabled on very few hosts
+if [ -n "$DUP_PRUNE_EXCL" ]; then
+    if consul_check; then
+        consul lock -shell backup '{
+            set -e
+            get_running() { running=$(consul kv get -recurse backup/running); n_running=$(echo -n "$running" | wc -l); }
+            get_running
+            while true; do
+                [ "$n_running" -eq 0 ] && break
+                now=$(date +%s)
+                for b in $running; do
+                    id=${b/:*}
+                    start=${b/*:}
+                    # this clears stale backups according to defined max_runtime
+                    runtime=$((now-start))
+                    echo "backup from ${id/backup\/running\/} running for $runtime seconds."
+                    if [ $runtime -gt '"$max_runtime"' ]; then
+                        consul kv delete $id
+                    fi
+                done
+                get_running
+                echo "waiting for $n_running backups to complete."
+                sleep 5
+            done
+            # once no backups are running, execute exclusive pruning
+            dup prune '"$dup_prune_args"' -a -exhaustive -exclusive
+        }'
+    fi
+fi
 
+# This prevents running backups during exclusive pruning
+# set $DUP_NO_LOCKING to disable it
+if [ -z "$DUP_NO_LOCKING" ] && consul_check; then
+    id=${LOCA:-${IPv4:-$(ip a | grep inet | grep global | awk "{print \$2}")}}
+    now=$(date +%s)
+    [ -z "$id" ] && id="$(hostname)-$now"
+    trap "consul kv delete backup/running/$id" EXIT TERM
+    consul lock backup consul kv put backup/running/$id $now
+fi
+
+with_timeout dup backup -stats -threads $threads -storage $storage
