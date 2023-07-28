@@ -1,27 +1,27 @@
---- initramfs-init
-+++ initramfs-init-ostree
-@@ -400,8 +400,23 @@
+--- initramfs-init	2023-07-28 16:03:23.827714780 +0200
++++ initramfs-init-ostree	2023-07-28 16:04:45.427712905 +0200
+@@ -590,8 +590,23 @@
  	fi
  
  	eend $?
-+	
++
 +	## ostree check
 +	if [ -n "$ostree" ] ; then
-+		## deployment root
-+		mount -o remount,rw $sysroot ## remount rw to allow rw submounts
-+		mount --bind $sysroot$ostree $sysroot$ostree
-+		## physical root
-+		mount --bind $sysroot $sysroot$ostree/sysroot
-+		## readonly usr
-+		mount --bind $sysroot$ostree/usr $sysroot$ostree/usr
-+		mount --bind -o remount,ro $sysroot$ostree/usr $sysroot$ostree/usr
-+		## move
-+		mount --move $sysroot$ostree $sysroot
++			## deployment root
++			mount -o remount,rw $sysroot ## remount rw to allow rw submounts
++			mount --bind $sysroot$ostree $sysroot$ostree
++			## physical root
++			mount --bind $sysroot $sysroot$ostree/sysroot
++			## readonly usr
++			mount --bind $sysroot$ostree/usr $sysroot$ostree/usr
++			mount --bind -o remount,ro $sysroot$ostree/usr $sysroot$ostree/usr
++			## move
++			mount --move $sysroot$ostree $sysroot
 +	fi
 +
- 	cat /proc/mounts | while read DEV DIR TYPE OPTS ; do
+ 	cat "$ROOT"/proc/mounts 2>/dev/null | while read DEV DIR TYPE OPTS ; do
 -		if [ "$DIR" != "/" -a "$DIR" != "$sysroot" -a -d "$DIR" ]; then
 +		if [ "$DIR" != "/" -a "${DIR#$sysroot}" = "$DIR" -a -d "$DIR" ]; then
  			mkdir -p $sysroot/$DIR
- 			mount -o move $DIR $sysroot/$DIR
+ 			$MOCK mount -o move $DIR $sysroot/$DIR
  		fi

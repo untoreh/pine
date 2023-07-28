@@ -13,6 +13,7 @@ dist_dir=../dist
 #  awk '/tag_name/ { print $2 }' | head -1 | sed -r 's/",?//g'`
 ## newV=`pine_version` ## this does not account for gh releases same as "git tag"
 # make sure tags are available
+git tag -d $(git tag -l)
 git fetch --depth=100 --tags
 ## local tag checks
 newV=$(git tag --sort=committerdate | tail -1)

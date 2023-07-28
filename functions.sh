@@ -56,7 +56,7 @@ pine_version() {
 }
 
 last_version() {
-    git_versions "$1" | sort -bt. -k1nr -k2nr -k3r -k4r -k5r | head -1
+    git_versions "$1" |  sort -bt. -k1nr -k2nr -k3r -k4r -k5r | sort -bt'-' -k2n | grep -E '.*\.|\-.*'  | tail -n 1
 }
 
 last_version_g(){
