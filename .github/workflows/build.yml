@@ -11,6 +11,10 @@ on:
         description: 'Rebuild images from scratch (values `scratch-build` or `scratch-ovz`)'
         required: false
         default: ""
+      release_tag:
+        description: 'For pushing images'
+        required: false
+        default: ""
   push:
     branches:
       - develop
@@ -49,8 +53,9 @@ jobs:
       - run: docker exec pinect ./make_update.sh
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ inputs.release_tag != '' }}
         with:
+          tag_name: ${{ inputs.release_tag }}
           files: |
             image.pine.tgz
             rootfs.pine_ovz.sq
