@@ -3,13 +3,18 @@
 . ./functions.sh
 
 if [ "${COMMIT_MSG/scratch-build}" != "${COMMIT_MSG}" ]; then
-    printc "this is a scratch build..."
+    printc "building image...(init)"
     ./init/build.sh
-    printc "ovz..."
+    printc "building ovz...(init)"
     ./init/build_ovz.sh
 else
-    printc "this is an updated build..."
+    printc "building image...(update)"
     ./build_update.sh
-    printc "ovz..."
-    ./build_update_ovz.sh
+    if [ "${COMMIT_MSG/scratch-ovz}" != "${COMMIT_MSG}" ]; then
+        printc "building ovz...(init)"
+        ./init/build_ovz.sh
+    else
+        printc "building ovz...(update)"
+        ./build_update_ovz.sh
+    fi
 fi
