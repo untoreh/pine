@@ -6,6 +6,10 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+      scratch_build:
+        description: 'Rebuild images from scratch (values `scratch-build` or `scratch-ovz`)'
+        required: false
+        default: ""
   push:
     branches:
       - develop
@@ -15,7 +19,7 @@ jobs:
   docker:
     runs-on: ubuntu-22.04
     env:
-      COMMIT_MSG: ${{ github.event.head_commit.message }}
+      TRIGGER_MSG: ${{ inputs.scratch_build }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2

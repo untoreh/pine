@@ -2,7 +2,7 @@
 
 . ./functions.sh
 
-if [ "${COMMIT_MSG/scratch-build}" != "${COMMIT_MSG}" ]; then
+if [ "${TRIGGER_MSG/scratch-build}" != "${TRIGGER_MSG}" ]; then
     printc "building image...(init)"
     ./init/build.sh
     printc "building ovz...(init)"
@@ -10,7 +10,7 @@ if [ "${COMMIT_MSG/scratch-build}" != "${COMMIT_MSG}" ]; then
 else
     printc "building image...(update)"
     ./build_update.sh
-    if [ "${COMMIT_MSG/scratch-ovz}" != "${COMMIT_MSG}" ]; then
+    if [ "${TRIGGER_MSG/scratch-ovz}" != "${TRIGGER_MSG}" ]; then
         printc "building ovz...(init)"
         ./init/build_ovz.sh
     else
