@@ -72,7 +72,7 @@ mkdir -p etc/conf.d
 echo "RC_NO_UMOUNTS=/usr" >etc/conf.d/mount-ro
 
 # zswap
-cp -a ${dist_dir}/scripts/init.d/zwap etc/init.d/zswap
+cp -a ${dist_dir}/scripts/init.d/zswap etc/init.d/zswap
 cp -a ${dist_dir}/scripts/zswap-on etc/zswap
 chmod +x etc/init.d/zram etc/zram
 echo -e "SWAPFILE=/var/swap\nSWAPSIZE=1G" >etc/conf.d/zswap
